@@ -6,6 +6,7 @@ project:
 
 website:
   title: "dd"
+  site-url: "https://asa-datafest.netlify.app/"
   navbar:
     background: primary
     left:
