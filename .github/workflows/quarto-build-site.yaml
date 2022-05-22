@@ -44,13 +44,25 @@ jobs:
         with:
           cache-version: 2
 
-      - name: Build site 🔧
+      - name: Render website
+        # Add any command line argument needed
         run: |
-          R -e 'quarto::quarto_render(".", as_job = FALSE)'
+          quarto render
 
-      - name: Deploy 🚀
-        if: github.event_name != 'pull_request'
-        uses: JamesIves/github-pages-deploy-action@4.1.7
+      - name: Deploy to Netlify
+        id: netlify-deploy
+        uses: nwtgck/actions-netlify@v1
         with:
-          branch: gh-pages # The branch the action should deploy to.
-          folder: _site # The folder the action should deploy.
+          # The folder the action should deploy. Adapt if you changed in Quarto config
+          publish-dir: './_book'
+          production-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message:
+            'Deploy from GHA: ${{ github.event.pull_request.title || github.event.head_commit.message }} (${{ github.sha }})'
+          enable-pull-request-comment: true #  Comment on pull request
+          enable-commit-comment: true # Comment on GitHub commit
+          enable-commit-status: true # GitHub commit status
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 1
