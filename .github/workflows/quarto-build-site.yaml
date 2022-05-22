@@ -54,7 +54,7 @@ jobs:
         uses: nwtgck/actions-netlify@v1
         with:
           # The folder the action should deploy. Adapt if you changed in Quarto config
-          publish-dir: './_book'
+          publish-dir: './_site'
           production-branch: main
           github-token: ${{ secrets.GITHUB_TOKEN }}
           deploy-message:
