@@ -89,7 +89,7 @@ server <- function(input, output, session) {
       scale_y_continuous("",
                          limits = c(0, max_tot_part)) +
       labs(title = "DataFest participants over time", 
-           subtitle = "Total number of participants for each year")
+           subtitle = "Total number of participants for each year this is Jenny")
     
   })
   
