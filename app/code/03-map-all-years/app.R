@@ -81,8 +81,8 @@ server <- function(input, output, session) {
     sel_part_count <- filter(part_count, year <= input$year)
     
     ggplot(sel_part_count, aes(x = year, y = tot_part)) +
-      geom_line() +
-      geom_point() +
+      geom_line(color = "blue") +
+      geom_point(size = 3) +
       scale_x_continuous("Year",
                          limits = c(2011, 2017),
                          breaks = c(2011:2017)) +
