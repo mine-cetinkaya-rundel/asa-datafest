@@ -1,5 +1,9 @@
 # load helpers ------------------------------------------------------
 source("helper.R", local = TRUE)
+datafest <- datafest %>%
+  mutate(insight = "", visualization = "", external = "")
+datafest_titles <- datafest %>%
+  select(host, year, insight:external)
 
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
@@ -23,7 +27,8 @@ ui <- fluidPage(
         ),
         mainPanel(
           leafletOutput("map"),
-          plotOutput("line", height = "200px")
+          plotOutput("line", height = "200px"),
+          tableOutput("titles")
         )
       )
     ),
@@ -44,6 +49,7 @@ ui <- fluidPage(
     tags$p(
       fluidRow(strong("Investigation into Elm City Stories’ MiniGame Design")),
       tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-tie-presentation.pdf")
+
     )
   )
 )
@@ -107,8 +113,8 @@ server <- function(input, output, session) {
     sel_part_count <- filter(part_count, year <= input$year)
 
     ggplot(sel_part_count, aes(x = year, y = tot_part)) +
-      geom_line() +
-      geom_point() +
+      geom_line(color = "blue") +
+      geom_point(size = 3) +
       scale_x_continuous("Year",
                          limits = c(2011, 2017),
                          breaks = c(2011:2017)) +
@@ -118,7 +124,9 @@ server <- function(input, output, session) {
            subtitle = "Total number of participants for each year")
 
   })
-
+  output$titles <- renderTable(
+    datafest_titles %>%
+      filter(year == input$year))
 }
 
 # run app -----------------------------------------------------------
