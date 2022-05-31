@@ -24,6 +24,7 @@ ui <- fluidPage(
     mainPanel(
       leafletOutput("map"),
       plotOutput("line", height = "200px"),
+      # titlePanel("Winning Projects"),
       tableOutput("titles")
     )
   )
@@ -99,7 +100,13 @@ server <- function(input, output, session) {
   })
   output$titles <- renderTable(
     datafest_titles %>%
-      filter(year == input$year))
+      filter(year == input$year),
+    hover = TRUE,
+    striped = TRUE,
+    align = "lcccr",
+    digits = 0,
+    title = "Winning Projects"
+    )
 }
 
 # run app -----------------------------------------------------------
