@@ -1,5 +1,8 @@
 # load helpers ------------------------------------------------------
 source("helper.R", local = TRUE)
+
+# create a table with just winning titles ---------------------------
+
 datafest_titles <- datafest %>%
   select(host, year, insight, visualization, external)
 
@@ -46,11 +49,12 @@ ui <- fluidPage(
       tags$p(
         fluidRow(strong("Investigation into Elm City Stories’ MiniGame Design")),
         tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-tie-presentation.pdf")
-
       )
     )
   )
 )
+
+
 
 # define server logic -----------------------------------------------
 server <- function(input, output, session) {
@@ -120,7 +124,6 @@ server <- function(input, output, session) {
            subtitle = "Total number of participants for each year")
 
   })
-
   output$titles <- renderTable(
     datafest_titles %>%
 
@@ -131,7 +134,6 @@ server <- function(input, output, session) {
     digits = 0,
     title = "Winning Projects"
     )
-
 }
 
 # run app -----------------------------------------------------------
