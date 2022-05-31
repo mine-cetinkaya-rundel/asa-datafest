@@ -5,8 +5,8 @@ library(shiny)
 
 # load data ---------------------------------------------------------
 datafest <- read_csv("/Users/yangzhenyu/asa-datafest/app/data/datafest.csv")
-write.csv(x = datafest, file = "app/data/jenny.csv", row.names = FALSE)
-datafest <- read_csv("app/data/jenny.csv")
+datafest <- datafest %>%
+  mutate(insight = "", visualization = "", external = "")
 
 # set colors --------------------------------------------------------
 href_color <- "#A7C6C6"

@@ -1,7 +1,5 @@
 # load helpers ------------------------------------------------------
 source("helper.R", local = TRUE)
-datafest <- datafest %>%
-  mutate(insight = "", visualization = "", external = "")
 datafest_titles <- datafest %>%
   select(host, year, insight:external)
 
@@ -102,7 +100,7 @@ server <- function(input, output, session) {
 
   output$titles <- renderTable(
     datafest_titles %>%
-<<<<<<< HEAD
+
       filter(year == input$year),
     hover = TRUE,
     striped = TRUE,
@@ -110,10 +108,7 @@ server <- function(input, output, session) {
     digits = 0,
     title = "Winning Projects"
     )
-=======
-      filter(year == input$year))
 
->>>>>>> 900323bdf1e2111024c2319d80637a91daa8bb19
 }
 
 # run app -----------------------------------------------------------
