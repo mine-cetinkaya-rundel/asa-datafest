@@ -1,5 +1,9 @@
 # load helpers ------------------------------------------------------
 source("helper.R", local = TRUE)
+datafest <- datafest %>%
+  mutate(insight = "", visualization = "", external = "")
+datafest_titles <- datafest %>%
+  select(host, year, insight:external)
 
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
@@ -20,7 +24,8 @@ ui <- fluidPage(
     ),
     mainPanel(
       leafletOutput("map"),
-      plotOutput("line", height = "200px")
+      plotOutput("line", height = "200px"),
+      tableOutput("titles")
     )
   )
 )
@@ -93,6 +98,10 @@ server <- function(input, output, session) {
            subtitle = "Total number of participants for each year")
 
   })
+
+  output$titles <- renderTable(
+    datafest_titles %>%
+      filter(year == input$year))
 
 }
 
