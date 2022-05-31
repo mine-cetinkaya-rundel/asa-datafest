@@ -2,6 +2,7 @@
 source("helper.R", local = TRUE)
 
 # create a table with just winning titles ---------------------------
+
 datafest_titles <- datafest %>%
   select(host, year, insight, visualization, external)
 
@@ -136,8 +137,6 @@ server <- function(input, output, session) {
     digits = 0,
     title = "Winning Projects"
     )
-
-
 }
 
 # run app -----------------------------------------------------------
