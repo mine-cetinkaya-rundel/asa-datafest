@@ -2,11 +2,16 @@
 library(tidyverse)
 library(leaflet)
 library(shiny)
+library(here)
+library(praise)
+library(usethis)
+
 
 # load data ---------------------------------------------------------
-datafest <- read_csv("/Users/yangzhenyu/asa-datafest/app/data/datafest.csv")
-write.csv(x = datafest, file = "app/data/jenny.csv", row.names = FALSE)
-datafest <- read_csv("app/data/jenny.csv")
+# datafest <- read_csv(app/data/datafest.csv)
+datafest <- read_csv(here::here("/Users/yangzhenyu/asa-datafest/app/data/datafest.csv"))
+datafest <- datafest %>%
+  mutate(insight = "", insight_url = "", visualization = "", visualization_url = "", external = "", external_url = "")
 
 # set colors --------------------------------------------------------
 href_color <- "#A7C6C6"
