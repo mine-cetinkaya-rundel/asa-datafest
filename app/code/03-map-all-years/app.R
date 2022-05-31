@@ -1,33 +1,63 @@
 # load helpers ------------------------------------------------------
 source("helper.R", local = TRUE)
+
+# create a table with just winning titles ---------------------------
+
 datafest_titles <- datafest %>%
-  select(host, year, insight:external)
+  select(host, year, insight, visualization, external)
 
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
+  # theme = shinytheme(<lumen>),
   titlePanel("ASA DataFest over the years"),
-  sidebarLayout(
-    sidebarPanel(
-      sliderInput("year", "Year", value = 2011,
-                  min = 2011, max = 2017, step = 1,
-                  animate = animationOptions(interval = 1500),
-                  sep = ""),
-      br(),
-      p("This app is designed to demonstrate the growth and spread of",
-        tags$a(href = "http://www.amstat.org/education/datafest/", "ASA DataFest"),
-        "over the years. Click on the points to find out more about each event.",
-        "If your institution does not appear on the list, email",
-        tags$a(href = "mailto:mine@stat.duke.edu", "mine@stat.duke.edu.")),
-      HTML("<b>Angie push test </b>")
+  tabsetPanel(
+    type = "tabs",
+    tabPanel("Geographically and Chronologically",
+      sidebarLayout(
+        sidebarPanel(
+          sliderInput("year", "Year", value = 2011,
+                      min = 2011, max = 2017, step = 1,
+                      animate = animationOptions(interval = 1500),
+                      sep = ""),
+          br(),
+          p("This app is designed to demonstrate the growth and spread of",
+            tags$a(href = "http://www.amstat.org/education/datafest/", "ASA DataFest"),
+            "over the years. Click on the points to find out more about each event.",
+            "If your institution does not appear on the list, email",
+            tags$a(href = "mailto:mine@stat.duke.edu", "mine@stat.duke.edu."))
+        ),
+        mainPanel(
+          leafletOutput("map"),
+          plotOutput("line", height = "200px"),
+          fluidRow(strong("Winning Projects")),
+          tableOutput("titles")
+        )
+      )
     ),
-    mainPanel(
-      leafletOutput("map"),
-      plotOutput("line", height = "200px"),
-      # titlePanel("Winning Projects"),
-      tableOutput("titles")
+
+
+
+        #tabPanel("Chronologically", plotOutput("line", height = "200px")),
+  tabPanel(
+    "Winning Projects",
+    style = "width: 90%; margin: auto;",
+    tags$p(
+      fluidRow(strong("Best Visualizations")),
+      tags$a("A predictive tool to identity at risk adolescents", href = "https://www2.stat.duke.edu/datafest/winning-projects/FishSwish-Presentation.pdf")
+      ),
+    tags$p(
+      fluidRow(strong("Best Insight")),
+      tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-chili-chill-presentation.pdf")
+    ),
+    tags$p(
+      fluidRow(strong("Investigation into Elm City Stories’ MiniGame Design")),
+      tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-tie-presentation.pdf")
+
     )
   )
 )
+)
+
 
 # define server logic -----------------------------------------------
 server <- function(input, output, session) {
@@ -97,7 +127,6 @@ server <- function(input, output, session) {
            subtitle = "Total number of participants for each year")
 
   })
-
   output$titles <- renderTable(
     datafest_titles %>%
 
@@ -108,7 +137,6 @@ server <- function(input, output, session) {
     digits = 0,
     title = "Winning Projects"
     )
-
 }
 
 # run app -----------------------------------------------------------
