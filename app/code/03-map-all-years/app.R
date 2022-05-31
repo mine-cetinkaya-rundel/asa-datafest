@@ -97,7 +97,7 @@ server <- function(input, output, session) {
                          limits = c(0, max_tot_part)) +
 
       labs(title = "DataFest participants over time", 
-           subtitle = "Total number of participants for each year this is Jenny")
+           subtitle = "Total number of participants for each year")
     
 
       labs(title = "DataFest participants over time",
