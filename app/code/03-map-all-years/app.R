@@ -19,7 +19,8 @@ ui <- fluidPage(
         tags$a(href = "http://www.amstat.org/education/datafest/", "ASA DataFest"),
         "over the years. Click on the points to find out more about each event.",
         "If your institution does not appear on the list, email",
-        tags$a(href = "mailto:mine@stat.duke.edu", "mine@stat.duke.edu."))
+        tags$a(href = "mailto:mine@stat.duke.edu", "mine@stat.duke.edu.")),
+      HTML("<b>Angie push test </b>")
     ),
     mainPanel(
       leafletOutput("map"),
@@ -86,8 +87,8 @@ server <- function(input, output, session) {
     sel_part_count <- filter(part_count, year <= input$year)
 
     ggplot(sel_part_count, aes(x = year, y = tot_part)) +
-      geom_line() +
-      geom_point() +
+      geom_line(color = "blue") +
+      geom_point(size = 3) +
       scale_x_continuous("Year",
                          limits = c(2011, 2017),
                          breaks = c(2011:2017)) +
@@ -97,9 +98,11 @@ server <- function(input, output, session) {
            subtitle = "Total number of participants for each year")
 
   })
+
   output$titles <- renderTable(
     datafest_titles %>%
       filter(year == input$year))
+
 }
 
 # run app -----------------------------------------------------------
