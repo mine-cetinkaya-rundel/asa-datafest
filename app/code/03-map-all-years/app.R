@@ -27,12 +27,13 @@ ui <- fluidPage(
             tags$a(href = "mailto:mine@stat.duke.edu", "mine@stat.duke.edu."))
         ),
         mainPanel(
-          fluidRow(box(d1, htmlOutput("plot1"))),
+          #fluidRow(box(d1, htmlOutput("plot1"))),
           br(),
           leafletOutput("map"),
           plotOutput("line", height = "200px"),
           fluidRow(strong("Winning Projects")),
-          tableOutput("titles")
+          tableOutput("titles"),
+          wordcloud2Output("wordcloud", width = "100%", height = "400px")
         )
       )
     ),
@@ -137,6 +138,14 @@ server <- function(input, output, session) {
     digits = 0,
     title = "Winning Projects"
     )
+
+  output$wordcloud <- renderWordcloud2({
+    Major <- c("Stats", "Computer Science", "Pure Math", "Applied Math","A","B","C")
+    Freq <- c(23, 41, 32, 58,3,2,1)
+
+    df <- data.frame(Major,Freq)
+    wordcloud2(data=df)
+  })
 }
 
 # run app -----------------------------------------------------------
