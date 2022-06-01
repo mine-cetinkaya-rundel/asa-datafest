@@ -140,8 +140,8 @@ server <- function(input, output, session) {
     )
 
   output$wordcloud <- renderWordcloud2({
-    Major <- c("Stats", "Computer Science", "Pure Math", "Applied Math")
-    Freq <- c(23, 41, 32, 58)
+    Major <- c("Stats", "Computer Science", "Pure Math", "Applied Math","A","B","C")
+    Freq <- c(23, 41, 32, 58,3,2,1)
 
     df <- data.frame(Major,Freq)
     wordcloud2(data=df)
