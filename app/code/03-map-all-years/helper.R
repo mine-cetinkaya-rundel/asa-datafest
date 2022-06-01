@@ -6,6 +6,7 @@ library(here)
 library(praise)
 library(usethis)
 
+<<<<<<< HEAD
 
 library(here)
 library(praise)
@@ -16,6 +17,15 @@ library(usethis)
 datafest <- read_csv(here::here("/Users/yangzhenyu/asa-datafest/app/data/datafest.csv"))
 datafest <- datafest %>%
   mutate(insight = "", insight_pre = "", visualization = "", visualization_pre = "", external = "", external_pre = "")
+=======
+
+# load data ---------------------------------------------------------
+
+# datafest <- read_csv(app/data/datafest.csv)
+datafest <- read_csv(here::here("/Users/yangzhenyu/asa-datafest/app/data/datafest.csv"))
+datafest <- datafest %>%
+  mutate(insight = "", insight_url = "", visualization = "", visualization_url = "", external = "", external_url = "")
+>>>>>>> 29e1c43865c689532c58bb29e48a892748c524d1
 
 # set colors --------------------------------------------------------
 href_color <- "#A7C6C6"
