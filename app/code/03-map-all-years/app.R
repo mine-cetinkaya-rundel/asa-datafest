@@ -27,6 +27,8 @@ ui <- fluidPage(
             tags$a(href = "mailto:mine@stat.duke.edu", "mine@stat.duke.edu."))
         ),
         mainPanel(
+          fluidRow(box(d1, htmlOutput("plot1"))),
+          br(),
           leafletOutput("map"),
           plotOutput("line", height = "200px"),
           fluidRow(strong("Winning Projects")),
@@ -34,8 +36,6 @@ ui <- fluidPage(
         )
       )
     ),
-
-
 
         #tabPanel("Chronologically", plotOutput("line", height = "200px")),
   tabPanel(
