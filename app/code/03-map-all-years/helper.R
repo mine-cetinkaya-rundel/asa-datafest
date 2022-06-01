@@ -5,6 +5,7 @@ library(shiny)
 library(here)
 library(praise)
 library(usethis)
+library(wordcloud2)
 
 
 # load data ---------------------------------------------------------
