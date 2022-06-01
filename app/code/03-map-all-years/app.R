@@ -52,20 +52,12 @@ ui <- fluidPage(
     tags$p(
       fluidRow(strong("Investigation into Elm City Stories’ MiniGame Design")),
       tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-tie-presentation.pdf")
-<<<<<<< HEAD
-=======
-
->>>>>>> 29e1c43865c689532c58bb29e48a892748c524d1
     )
   )
 )
 )
 
-<<<<<<< HEAD
 
-
-=======
->>>>>>> 29e1c43865c689532c58bb29e48a892748c524d1
 
 # define server logic -----------------------------------------------
 server <- function(input, output, session) {
