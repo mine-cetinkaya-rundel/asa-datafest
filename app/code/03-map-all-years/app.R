@@ -27,12 +27,10 @@ ui <- fluidPage(
             tags$a(href = "mailto:mine@stat.duke.edu", "mine@stat.duke.edu."))
         ),
         mainPanel(
-          # fluidRow(box(d1, htmlOutput("plot1"))),
-          # br(),
+          br(),
           leafletOutput("map"),
           plotOutput("line", height = "200px")
-          # fluidRow(strong("Winning Projects")),
-          # tableOutput("titles")
+          # wordcloud2Output("wordcloud", width = "100%", height = "400px")
         )
       )
     ),
@@ -40,35 +38,36 @@ ui <- fluidPage(
   tabPanel(
     "Winning Projects",
     style = "width: 90%; margin: auto;",
-    sidebarLayout(
+      sidebarLayout(
       sidebarPanel(
-        selectizeInput("year_choice",
-                    "Year",
-                    choices = pull(datafest,"year"),
-                    selected = NULL,
-                    multiple = TRUE),
+        pickerInput("year_choice",
+                     "Year",
+                     choices = unique(pull(datafest, "year")),
+                     selected = c(datafest$year),
+                     options = list(`actions-box` = TRUE),
+                     multiple = TRUE),
 
-        selectizeInput("host_choice",
-                    "Host University",
-                    choices = pull(datafest, "host"),
-                    selected = NULL,
-                    multiple = TRUE),
+         pickerInput("host_choice",
+                     "Host University",
+                     choices = unique(pull(datafest, "host")),
+                     selected = c(datafest$host),
+                     options = list(`actions-box` = TRUE),
+                     multiple = TRUE)
 
-        # selectizeInput("award_choice",
-        #             "Award",
-        #             choices = c("Best Insight", "Best Visualization", "Best Use of External Data"),
-        #             selected = NULL,
-        #             multiple = TRUE)
-      ),
+         # selectizeInput("award_choice",
+         #             "Award",
+         #             choices = c("Best Insight", "Best Visualization", "Best Use of External Data"),
+         #             selected = NULL,
+         #             multiple = TRUE)
+       ),
 
       mainPanel(
-        tableOutput("Winning Titles")
+        tableOutput("titles")
       )
-
+)
 
     )
   )
-)
 )
   #   tags$p(
   #     fluidRow(strong("Best Visualizations")),
@@ -140,35 +139,46 @@ server <- function(input, output, session) {
   })
 
 
-  output$line <- renderPlot({
+  # output$line <- renderPlot({
+  #
+  #   sel_part_count <- filter(part_count, year <= input$year)
+  #
+  #   ggplot(sel_part_count, aes(x = year, y = tot_part)) +
+  #     geom_line(color = "blue") +
+  #     geom_point(size = 3) +
+  #     scale_x_continuous("Year",
+  #                        limits = c(2011, 2017),
+  #                        breaks = c(2011:2017)) +
+  #     scale_y_continuous("",
+  #                        limits = c(0, max_tot_part)) +
+  #     labs(title = "DataFest participants over time",
+  #          subtitle = "Total number of participants for each year")
+  #
+  # })
 
-    sel_part_count <- filter(part_count, year <= input$year)
-
-    ggplot(sel_part_count, aes(x = year, y = tot_part)) +
-      geom_line(color = "blue") +
-      geom_point(size = 3) +
-      scale_x_continuous("Year",
-                         limits = c(2011, 2017),
-                         breaks = c(2011:2017)) +
-      scale_y_continuous("",
-                         limits = c(0, max_tot_part)) +
-      labs(title = "DataFest participants over time",
-           subtitle = "Total number of participants for each year")
-
-  })
-  titles_subset <- reactive({
-    req(input$year_choice)
-    req(input$host_choice)
-    filter(datafest_titles, year == input$year_choice, host == input$host_choice)
-  })
+    titles_subset <- reactive({
+      req(input$year_choice)
+      req(input$host_choice)
+      filter(datafest_titles, year %in% input$year_choice, host %in% input$host_choice)
+    })
 
   output$titles <- renderTable(
     titles_subset(),
     hover = TRUE,
     striped = TRUE,
-    digits = 0,
-    title = "Winning Projects"
-    )}
+    digits = 0
+    # title = "Winning Projects"
+    )
+
+  output$wordcloud <- renderWordcloud2({
+    Major <- c("Stats", "Computer Science", "Pure Math", "Applied Math","A","B","C")
+    Freq <- c(23, 41, 32, 58,3,2,1)
+
+    df <- data.frame(Major,Freq)
+    wordcloud2(data=df)
+  })
+}
+
 
 # run app -----------------------------------------------------------
 shinyApp(ui, server)
