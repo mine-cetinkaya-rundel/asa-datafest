@@ -14,7 +14,7 @@ library(shinyWidgets)
 
 datafest <- read_csv(here::here("/Users/yangzhenyu/asa-datafest/app/data/datafest.csv"))
 datafest <- datafest %>%
-  mutate(awards = "", presentation = "")
+  mutate(Awards = "", Title = "", Team = "", Presentation = "")
 
 
 # set colors --------------------------------------------------------

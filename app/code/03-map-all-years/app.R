@@ -4,7 +4,7 @@ source("helper.R", local = TRUE)
 # create a table with just winning titles ---------------------------
 
 datafest_titles <- datafest %>%
-  select(host, year, awards, presentation)
+  select(Awards, host, year, Title, Team, Presentation)
 
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
@@ -29,8 +29,8 @@ ui <- fluidPage(
         mainPanel(
           br(),
           leafletOutput("map"),
-          plotOutput("line", height = "200px")
-          # wordcloud2Output("wordcloud", width = "100%", height = "400px")
+          plotOutput("line", height = "200px"),
+          wordcloud2Output("wordcloud", width = "100%", height = "400px")
         )
       )
     ),
@@ -70,22 +70,6 @@ ui <- fluidPage(
     )
   )
 )
-  #   tags$p(
-  #     fluidRow(strong("Best Visualizations")),
-  #     tags$a("A predictive tool to identity at risk adolescents", href = "https://www2.stat.duke.edu/datafest/winning-projects/FishSwish-Presentation.pdf")
-  #     ),
-  #   tags$p(
-  #     fluidRow(strong("Best Insight")),
-  #     tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-chili-chill-presentation.pdf")
-  #   ),
-  #   tags$p(
-  #     fluidRow(strong("Investigation into Elm City Stories’ MiniGame Design")),
-  #     tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-tie-presentation.pdf")
-  #   )
-  # )
-
-
-
 
 
 # define server logic -----------------------------------------------
@@ -243,7 +227,7 @@ server <- function(input, output, session) {
       req(input$award_choice)
       filter(
         datafest_titles,
-        awards %in% input$award_choice,
+        Awards %in% input$award_choice,
         year %in% input$year_choice,
         host %in% input$host_choice)
     })
