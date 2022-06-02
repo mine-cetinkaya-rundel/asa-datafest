@@ -1,9 +1,14 @@
 # load helpers ------------------------------------------------------
 source("helper.R", local = TRUE)
 
+# create a table with just winning titles ---------------------------
+
+datafest_titles <- datafest %>%
+  select(host, year, insight, visualization, external)
+
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
-  theme = shinytheme("lumen"),
+  # theme = shinytheme(<lumen>),
   titlePanel("ASA DataFest over the years"),
   tabsetPanel(
     type = "tabs",
@@ -22,32 +27,64 @@ ui <- fluidPage(
             tags$a(href = "mailto:mine@stat.duke.edu", "mine@stat.duke.edu."))
         ),
         mainPanel(
+          br(),
           leafletOutput("map"),
           plotOutput("line", height = "200px")
+          # wordcloud2Output("wordcloud", width = "100%", height = "400px")
         )
       )
     ),
 
-
-        #tabPanel("Chronologically", plotOutput("line", height = "200px")),
   tabPanel(
     "Past Winners",
     style = "width: 90%; margin: auto;",
-    tags$p(
-      fluidRow(strong("Best Visualizations")),
-      tags$a("A predictive tool to identity at risk adolescents", href = "https://www2.stat.duke.edu/datafest/winning-projects/FishSwish-Presentation.pdf")
-      ),
-    tags$p(
-      fluidRow(strong("Best Insight")),
-      tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-chili-chill-presentation.pdf")
-    ),
-    tags$p(
-      fluidRow(strong("Investigation into Elm City Stories’ MiniGame Design")),
-      tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-tie-presentation.pdf")
+      sidebarLayout(
+      sidebarPanel(
+        pickerInput("year_choice",
+                     "Year",
+                     choices = unique(pull(datafest, "year")),
+                     selected = c(datafest$year),
+                     options = list(`actions-box` = TRUE),
+                     multiple = TRUE),
+
+         pickerInput("host_choice",
+                     "Host University",
+                     choices = unique(pull(datafest, "host")),
+                     selected = c(datafest$host),
+                     options = list(`actions-box` = TRUE),
+                     multiple = TRUE)
+
+         # selectizeInput("award_choice",
+         #             "Award",
+         #             choices = c("Best Insight", "Best Visualization", "Best Use of External Data"),
+         #             selected = NULL,
+         #             multiple = TRUE)
+       ),
+
+      mainPanel(
+        tableOutput("titles")
+      )
+)
+
     )
   )
 )
-)
+  #   tags$p(
+  #     fluidRow(strong("Best Visualizations")),
+  #     tags$a("A predictive tool to identity at risk adolescents", href = "https://www2.stat.duke.edu/datafest/winning-projects/FishSwish-Presentation.pdf")
+  #     ),
+  #   tags$p(
+  #     fluidRow(strong("Best Insight")),
+  #     tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-chili-chill-presentation.pdf")
+  #   ),
+  #   tags$p(
+  #     fluidRow(strong("Investigation into Elm City Stories’ MiniGame Design")),
+  #     tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-tie-presentation.pdf")
+  #   )
+  # )
+
+
+
 
 
 # define server logic -----------------------------------------------
@@ -181,24 +218,46 @@ server <- function(input, output, session) {
   })
 
 
-  output$line <- renderPlot({
+  # output$line <- renderPlot({
+  #
+  #   sel_part_count <- filter(part_count, year <= input$year)
+  #
+  #   ggplot(sel_part_count, aes(x = year, y = tot_part)) +
+  #     geom_line(color = "blue") +
+  #     geom_point(size = 3) +
+  #     scale_x_continuous("Year",
+  #                        limits = c(2011, 2017),
+  #                        breaks = c(2011:2017)) +
+  #     scale_y_continuous("",
+  #                        limits = c(0, max_tot_part)) +
+  #     labs(title = "DataFest participants over time",
+  #          subtitle = "Total number of participants for each year")
+  #
+  # })
 
-    sel_part_count <- filter(part_count, year <= input$year)
+    titles_subset <- reactive({
+      req(input$year_choice)
+      req(input$host_choice)
+      filter(datafest_titles, year %in% input$year_choice, host %in% input$host_choice)
+    })
 
-    ggplot(sel_part_count, aes(x = year, y = tot_part)) +
-      geom_line() +
-      geom_point() +
-      scale_x_continuous("Year",
-                         limits = c(2011, 2017),
-                         breaks = c(2011:2017)) +
-      scale_y_continuous("",
-                         limits = c(0, max_tot_part)) +
-      labs(title = "DataFest participants over time",
-           subtitle = "Total number of participants for each year")
+  output$titles <- renderTable(
+    titles_subset(),
+    hover = TRUE,
+    striped = TRUE,
+    digits = 0
+    # title = "Winning Projects"
+    )
 
+  output$wordcloud <- renderWordcloud2({
+    Major <- c("Stats", "Computer Science", "Pure Math", "Applied Math","A","B","C")
+    Freq <- c(23, 41, 32, 58,3,2,1)
+
+    df <- data.frame(Major,Freq)
+    wordcloud2(data=df)
   })
-
 }
+
 
 # run app -----------------------------------------------------------
 shinyApp(ui, server)

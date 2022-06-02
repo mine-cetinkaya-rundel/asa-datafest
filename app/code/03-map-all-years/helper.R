@@ -3,8 +3,19 @@ library(tidyverse)
 library(leaflet)
 library(shiny)
 library(shinythemes)
+library(here)
+library(praise)
+library(usethis)
+library(wordcloud2)
+library(shinyWidgets)
+
+
 # load data ---------------------------------------------------------
-datafest <- read_csv("data/datafest.csv")
+
+datafest <- read_csv(here::here("/Users/yangzhenyu/asa-datafest/app/data/datafest.csv"))
+datafest <- datafest %>%
+  mutate(insight = "", insight_pre = "", visualization = "", visualization_pre = "", external = "", external_pre = "")
+
 
 # set colors --------------------------------------------------------
 href_color <- "#9966CC"
@@ -25,3 +36,44 @@ part_count <- datafest %>%
 
 min_tot_part <- min(part_count$tot_part)
 max_tot_part <- max(part_count$tot_part)
+
+
+# calculate total countries participating for each year ------------------------
+country_count <- datafest %>%
+  group_by(year) %>%
+  summarise(tot_country = length(unique(datafest$country)))
+
+# calculate total hosts participating for each year ------------------------
+host_count <- datafest %>%
+  group_by(year) %>%
+  summarise(tot_host = length(unique(datafest$host)))
+
+# calculate DataSource list for each year ----------------------
+# year <- c("2011","2012","2013","2014","2015","2016","2017")
+# source_data <- c("LAPD","Kiva.com","eHarmony","GridPoint","Edmunds.com","Ticketmaster", "Expedia")
+# datasource <- data.frame(year, source_data)
+
+# Tiles
+# creating tiles for dashboard -------------------------
+year_today <- as.double(c(format(Sys.Date(), "%Y")))
+year_tile <- (year_today - min(datafest$year))+1
+
+participants_tile <- sum(datafest$num_part,na.rm = TRUE)
+
+unique_host <- unique(datafest$host)
+hosts_tile <- length(unique_host)
+
+unique_country <- unique(datafest$country)
+country_tile <- length(unique_country)
+
+# Tiles
+library(htmltools)
+library(TileMaker)
+
+b1 <- solo_box(value = year_tile, txt = "Years", size = "lg", color = "info")
+b2 <- solo_box(value = country_tile, txt = "Countries", size = "lg", color = "danger" )
+b3 <- solo_box(value = hosts_tile, txt = "Institutions", size = "lg", color = "warning")
+b4 <- solo_box(value = participants_tile, txt = "Participants", size = "lg", color = "success")
+
+d1 <- div_maker(subtitle = "DataFest by the Numbers",
+                textModifier = "h4", b1, b2, b3, b4)
