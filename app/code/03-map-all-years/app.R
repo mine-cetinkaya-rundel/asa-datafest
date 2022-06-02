@@ -4,7 +4,7 @@ source("helper.R", local = TRUE)
 # create a table with just winning titles ---------------------------
 
 datafest_titles <- datafest %>%
-  select(host, year, insight, visualization, external)
+  select(Awards, host, year, Title, Team, Presentation)
 
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
@@ -29,8 +29,8 @@ ui <- fluidPage(
         mainPanel(
           br(),
           leafletOutput("map"),
-          plotOutput("line", height = "200px")
-          # wordcloud2Output("wordcloud", width = "100%", height = "400px")
+          plotOutput("line", height = "200px"),
+          wordcloud2Output("wordcloud", width = "100%", height = "400px")
         )
       )
     ),
@@ -52,13 +52,14 @@ ui <- fluidPage(
                      choices = unique(pull(datafest, "host")),
                      selected = c(datafest$host),
                      options = list(`actions-box` = TRUE),
-                     multiple = TRUE)
+                     multiple = TRUE),
 
-         # selectizeInput("award_choice",
-         #             "Award",
-         #             choices = c("Best Insight", "Best Visualization", "Best Use of External Data"),
-         #             selected = NULL,
-         #             multiple = TRUE)
+         pickerInput("award_choice",
+                     "Award",
+                     choices = c("Best Insight", "Best Visualization", "Best Use of External Data"),
+                     selected = c("Best Insight", "Best Visualization", "Best Use of External Data"),
+                     options = list(`actions-box` = TRUE),
+                     multiple = TRUE)
        ),
 
       mainPanel(
@@ -69,22 +70,6 @@ ui <- fluidPage(
     )
   )
 )
-  #   tags$p(
-  #     fluidRow(strong("Best Visualizations")),
-  #     tags$a("A predictive tool to identity at risk adolescents", href = "https://www2.stat.duke.edu/datafest/winning-projects/FishSwish-Presentation.pdf")
-  #     ),
-  #   tags$p(
-  #     fluidRow(strong("Best Insight")),
-  #     tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-chili-chill-presentation.pdf")
-  #   ),
-  #   tags$p(
-  #     fluidRow(strong("Investigation into Elm City Stories’ MiniGame Design")),
-  #     tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-tie-presentation.pdf")
-  #   )
-  # )
-
-
-
 
 
 # define server logic -----------------------------------------------
@@ -235,10 +220,16 @@ server <- function(input, output, session) {
   #
   # })
 
+
     titles_subset <- reactive({
       req(input$year_choice)
       req(input$host_choice)
-      filter(datafest_titles, year %in% input$year_choice, host %in% input$host_choice)
+      req(input$award_choice)
+      filter(
+        datafest_titles,
+        Awards %in% input$award_choice,
+        year %in% input$year_choice,
+        host %in% input$host_choice)
     })
 
   output$titles <- renderTable(
@@ -246,7 +237,6 @@ server <- function(input, output, session) {
     hover = TRUE,
     striped = TRUE,
     digits = 0
-    # title = "Winning Projects"
     )
 
   output$wordcloud <- renderWordcloud2({
