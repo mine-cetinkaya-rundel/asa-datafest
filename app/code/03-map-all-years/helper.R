@@ -2,11 +2,13 @@
 library(tidyverse)
 library(leaflet)
 library(shiny)
+library(shinythemes)
 library(here)
 library(praise)
 library(usethis)
 library(wordcloud2)
 library(shinyWidgets)
+
 
 # load data ---------------------------------------------------------
 
@@ -16,10 +18,11 @@ datafest <- datafest %>%
 
 
 # set colors --------------------------------------------------------
-href_color <- "#A7C6C6"
-marker_color <- "black"
-part_color <- "#89548A"
-
+href_color <- "#9966CC"
+marker_color <- "darkseagreen"
+part_color <- "#CC9966"
+bins <- c(0, 10, 20, 40, 50, 100, 200, 300, 400, Inf)
+pal <- colorBin("Blues", domain = states$num_par, bins = bins)
 # set map bounds ----------------------------------------------------
 left <- floor(min(datafest$lon))
 right <- ceiling(max(datafest$lon))
