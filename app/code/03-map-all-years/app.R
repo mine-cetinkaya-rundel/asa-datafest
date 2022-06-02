@@ -4,7 +4,7 @@ source("helper.R", local = TRUE)
 # create a table with just winning titles ---------------------------
 
 datafest_titles <- datafest %>%
-  select(host, year, insight, visualization, external)
+  select(host, year, awards, presentation)
 
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
@@ -52,13 +52,14 @@ ui <- fluidPage(
                      choices = unique(pull(datafest, "host")),
                      selected = c(datafest$host),
                      options = list(`actions-box` = TRUE),
-                     multiple = TRUE)
+                     multiple = TRUE),
 
-         # selectizeInput("award_choice",
-         #             "Award",
-         #             choices = c("Best Insight", "Best Visualization", "Best Use of External Data"),
-         #             selected = NULL,
-         #             multiple = TRUE)
+         pickerInput("award_choice",
+                     "Award",
+                     choices = c("Best Insight", "Best Visualization", "Best Use of External Data"),
+                     selected = c("Best Insight", "Best Visualization", "Best Use of External Data"),
+                     options = list(`actions-box` = TRUE),
+                     multiple = TRUE)
        ),
 
       mainPanel(
@@ -235,10 +236,16 @@ server <- function(input, output, session) {
   #
   # })
 
+
     titles_subset <- reactive({
       req(input$year_choice)
       req(input$host_choice)
-      filter(datafest_titles, year %in% input$year_choice, host %in% input$host_choice)
+      req(input$award_choice)
+      filter(
+        datafest_titles,
+        awards %in% input$award_choice,
+        year %in% input$year_choice,
+        host %in% input$host_choice)
     })
 
   output$titles <- renderTable(
@@ -246,7 +253,6 @@ server <- function(input, output, session) {
     hover = TRUE,
     striped = TRUE,
     digits = 0
-    # title = "Winning Projects"
     )
 
   output$wordcloud <- renderWordcloud2({
