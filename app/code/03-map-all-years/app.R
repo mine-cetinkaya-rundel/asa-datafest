@@ -29,8 +29,21 @@ ui <- fluidPage(
         mainPanel(
           br(),
           leafletOutput("map"),
-          plotOutput("line", height = "200px")
-          # wordcloud2Output("wordcloud", width = "100%", height = "400px")
+          plotOutput("line", height = "200px"),
+          wordcloud2Output("wordcloud", width = "100%", height = "400px")
+        )
+      )
+    ),
+
+    tabPanel(
+      "Universities",
+      style = "width: 90%; margin: auto;",
+      sidebarLayout(
+        sidebarPanel(
+
+        ),
+        mainPanel(
+
         )
       )
     ),
