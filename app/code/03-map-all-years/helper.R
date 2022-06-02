@@ -2,14 +2,14 @@
 library(tidyverse)
 library(leaflet)
 library(shiny)
-
+library(shinythemes)
 # load data ---------------------------------------------------------
 datafest <- read_csv("data/datafest.csv")
 
 # set colors --------------------------------------------------------
-href_color <- "#A7C6C6"
-marker_color <- "black"
-part_color <- "#89548A"
+href_color <- "#9966CC"
+marker_color <- "darkseagreen"
+part_color <- "#CC9966"
 
 # set map bounds ----------------------------------------------------
 left <- floor(min(datafest$lon))

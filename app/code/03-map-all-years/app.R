@@ -7,10 +7,10 @@ ui <- fluidPage(
   titlePanel("ASA DataFest over the years"),
   tabsetPanel(
     type = "tabs",
-    tabPanel("Geographically and Chronologically",
+    tabPanel("Homepage",
       sidebarLayout(
         sidebarPanel(
-          sliderInput("year", "Year", value = 2011,
+          sliderInput("year", "Year", value = 2017,
                       min = 2011, max = 2017, step = 1,
                       animate = animationOptions(interval = 1500),
                       sep = ""),
@@ -31,7 +31,7 @@ ui <- fluidPage(
 
         #tabPanel("Chronologically", plotOutput("line", height = "200px")),
   tabPanel(
-    "Winning Projects",
+    "Past Winners",
     style = "width: 90%; margin: auto;",
     tags$p(
       fluidRow(strong("Best Visualizations")),
@@ -59,8 +59,39 @@ server <- function(input, output, session) {
 
   output$map <- renderLeaflet({
     leaflet() %>%
+      addPolygons(
+        data = states,
+        fillColor = ~pal(num_par),
+        weight = 2,
+        opacity = 0.8,
+        color = "cornsilk1",
+        dashArray = "2",
+        fillOpacity = 1,
+        highlightOptions = highlightOptions(
+          weight = 3,
+          color = "blanchedalmond",
+          dashArray = "2",
+          fillOpacity = 0.7,
+          bringToFront = FALSE),
+        label = labels,
+        labelOptions = labelOptions(
+          style = list("font-weight" = "normal",
+                       padding = "3px 8px",
+                       "color" = "#999999"),
+          textsize = "10px",
+          direction = "auto")) %>%
+      addLegend(pal = pal, values = states$num_par, opacity = 0.7, title = NULL,
+                position = "bottomright") %>%
       addTiles() %>%
-      fitBounds(left, bottom, right, top)
+      fitBounds(lng1 = left, lat1 = bottom, lng2 = right, lat2 = top) %>%
+      addCircleMarkers(
+        lng = datafest_2017$lon, lat = datafest_2017$lat,
+        radius = log(datafest_2017$num_part) * 1.2,
+        fillColor = marker_color,
+        color = marker_color,
+        weight = 1,
+        fillOpacity = 0.5,
+        popup = popups)
   })
 
   observeEvent(d(), {
@@ -96,9 +127,12 @@ server <- function(input, output, session) {
                        radius = log(d()$num_part),
                        fillColor = marker_color,
                        color = marker_color,
-                       weight = 1,
+                       weight = ,
                        fillOpacity = 0.5,
                        popup = popups)
+
+
+
   })
 
 
