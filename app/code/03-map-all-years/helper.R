@@ -6,14 +6,14 @@ library(here)
 library(praise)
 library(usethis)
 library(wordcloud2)
-
+library(shinyWidgets)
 
 # load data ---------------------------------------------------------
 
-# datafest <- read_csv(app/data/datafest.csv)
-datafest <- read_csv(here::here("app/data/datafest.csv"))
+datafest <- read_csv(here::here("/Users/yangzhenyu/asa-datafest/app/data/datafest.csv"))
 datafest <- datafest %>%
-  mutate(insight = "", insight_url = "", visualization = "", visualization_url = "", external = "", external_url = "")
+  mutate(insight = "", insight_pre = "", visualization = "", visualization_pre = "", external = "", external_pre = "")
+
 
 # set colors --------------------------------------------------------
 href_color <- "#A7C6C6"
