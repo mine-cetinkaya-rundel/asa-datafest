@@ -63,15 +63,15 @@ server <- function(input, output, session) {
         data = states,
         fillColor = ~pal(num_par),
         weight = 2,
-        opacity = 0.8,
-        color = "cornsilk1",
-        dashArray = "2",
-        fillOpacity = 1,
+        opacity = 1,
+        color = "white",
+        dashArray = "3",
+        fillOpacity = 0.7,
         highlightOptions = highlightOptions(
-          weight = 3,
+          weight = 1,
           color = "blanchedalmond",
-          dashArray = "2",
-          fillOpacity = 0.7,
+          dashArray = "",
+          fillOpacity = 0.5,
           bringToFront = FALSE),
         label = labels,
         labelOptions = labelOptions(
@@ -80,7 +80,7 @@ server <- function(input, output, session) {
                        "color" = "#999999"),
           textsize = "10px",
           direction = "auto")) %>%
-      addLegend(pal = pal, values = states$num_par, opacity = 0.7, title = NULL,
+      addLegend(pal = pal, values = states$num_par, opacity = 0.5, title = NULL,
                 position = "bottomright") %>%
       addTiles() %>%
       fitBounds(lng1 = left, lat1 = bottom, lng2 = right, lat2 = top) %>%
@@ -92,6 +92,7 @@ server <- function(input, output, session) {
         weight = 1,
         fillOpacity = 0.5,
         popup = popups)
+
   })
 
   observeEvent(d(), {
@@ -121,8 +122,52 @@ server <- function(input, output, session) {
       host_text, other_inst_text, "<br>" , part_text
     )
 
+    participants <- d() %>%
+      mutate(state = ifelse(country == "Germany", "Germany", state)) %>%
+      mutate(state = ifelse(country == "Canada", "Canada", state)) %>%
+      select(state, num_part) %>%
+      rename(name = state)
+
+    states$num_par=0
+    for (i in 1:nrow(states)) {
+      for (j in 1:nrow(participants)) {
+        if (states$name[i] == participants$name[j]) {
+          if (!is.na(participants$num_part[j])) {
+            states$num_par[i] = states$num_par[i] + participants$num_part[j]
+          }
+        }
+      }
+    }
+
+
+
+
+
     mapProxy %>%
       addControl(h1(input$year), position = "topright") %>%
+      addPolygons(
+        data = states,
+        fillColor = ~pal(num_par),
+        weight = 5,
+        opacity = 0.8,
+        color = "cornsilk1",
+        dashArray = "2",
+        fillOpacity = 1,
+        highlightOptions = highlightOptions(
+          weight = 3,
+          color = "white",
+          dashArray = "2",
+          fillOpacity = 0.7,
+          bringToFront = FALSE),
+        label = labels,
+        labelOptions = labelOptions(
+          style = list("font-weight" = "normal",
+                       padding = "3px 8px",
+                       "color" = "#999999"),
+          textsize = "10px",
+          direction = "auto")) %>%
+      addLegend(pal = pal, values = states$num_par, opacity = 0.7, title = NULL,
+                position = "bottomright") %>%
       addCircleMarkers(lng = d()$lon, lat = d()$lat,
                        radius = log(d()$num_part),
                        fillColor = marker_color,

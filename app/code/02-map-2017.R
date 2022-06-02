@@ -5,7 +5,8 @@ library(leaflet)
 # load data ---------------------------------------------------------
 datafest <- read_csv("app/data/datafest.csv")
 participants <- datafest %>%
-  mutate(state = ifelse(city == "Mannheim", "Baden-Württemberg", state)) %>%
+  mutate(state = ifelse(country == "Germany", "Germany", state)) %>%
+  mutate(state = ifelse(country == "Canada", "Canada", state)) %>%
   select(state, num_part) %>%
   rename(name = state)
 
@@ -47,10 +48,14 @@ popups <- paste0(
 
 # plot map ----------------------------------------------------------
 states <- geojsonio::geojson_read("https://rstudio.github.io/leaflet/json/us-states.geojson", what = "sp")
-countries <- geojsonio::geojson_read("https://rstudio.github.io/leaflet/json/countries.geojson")
-countries[[1]]
+countries <- geojsonio::geojson_read("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json", what = "sp")
+country <- countries[countries$name %in% datafest$country,]
+
+country$density = NA
+states <- rbind(states,country)
 
 states$num_par=0
+
 for (i in 1:nrow(states)) {
   for (j in 1:nrow(participants)) {
     if (states$name[i] == participants$name[j]) {
@@ -62,6 +67,8 @@ for (i in 1:nrow(states)) {
 }
 
 
+
+
 map <- leaflet(states) %>%
   setView(-96, 37.8, 4) %>%
   addProviderTiles("MapBox", options = providerTileOptions(
@@ -70,8 +77,11 @@ map <- leaflet(states) %>%
 
 map %>% addPolygons()
 
-bins <- c(0, 10, 20, 50, 100, 200, 500, 1000, Inf)
-pal <- colorNumeric(palette = "Blues", domain = states$num_par)
+bins <- c(0, 10, 20, 40, 50, 100, 200, 300, 400, Inf)
+
+pal <- colorBin("Blues", domain = states$num_par, bins = bins)
+
+
 
 
 library(RColorBrewer)
@@ -95,19 +105,18 @@ labels <- sprintf(
 
 
 leaflet() %>%
-  addPolygons(
-    data = countries,
-    fillColor = "mediumpurple2",
-    weight = 2,
-    opacity = 1,
-    color = "white",
-    dashArray = "",
-    fillOpacity = 0.7
-  ) %>%
+  # addPolygons(
+  #   fillColor = "yellow",
+  #   weight = 2,
+  #   opacity = 1,
+  #   color = "white",
+  #   dashArray = "",
+  #   fillOpacity = 0.7
+  # ) %>%
   addPolygons(
     data = states,
     fillColor = ~pal(num_par),
-    weight = 2,
+    weight = 3,
     opacity = 1,
     color = "white",
     dashArray = "3",
@@ -125,7 +134,7 @@ leaflet() %>%
                    "color" = "#999999"),
       textsize = "10px",
       direction = "auto")) %>%
-  addLegend(pal = pal, values = states$num_par, opacity = 0.7, title = NULL,
+  addLegend(pal = pal, values = states$num_par, opacity = 0.5, title = NULL,
             position = "bottomright") %>%
   addTiles() %>%
   fitBounds(lng1 = left, lat1 = bottom, lng2 = right, lat2 = top) %>%
@@ -137,5 +146,4 @@ leaflet() %>%
     weight = 1,
     fillOpacity = 0.5,
     popup = popups)
-map2
 

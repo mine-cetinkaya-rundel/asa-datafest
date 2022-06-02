@@ -10,7 +10,8 @@ datafest <- read_csv("data/datafest.csv")
 href_color <- "#9966CC"
 marker_color <- "darkseagreen"
 part_color <- "#CC9966"
-
+bins <- c(0, 10, 20, 40, 50, 100, 200, 300, 400, Inf)
+pal <- colorBin("Blues", domain = states$num_par, bins = bins)
 # set map bounds ----------------------------------------------------
 left <- floor(min(datafest$lon))
 right <- ceiling(max(datafest$lon))
