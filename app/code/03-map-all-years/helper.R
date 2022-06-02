@@ -5,6 +5,7 @@ library(shiny)
 library(here)
 library(praise)
 library(usethis)
+library(shinyWidgets)
 
 # load data ---------------------------------------------------------
 

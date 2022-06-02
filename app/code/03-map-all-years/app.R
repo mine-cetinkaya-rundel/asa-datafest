@@ -27,35 +27,64 @@ ui <- fluidPage(
             tags$a(href = "mailto:mine@stat.duke.edu", "mine@stat.duke.edu."))
         ),
         mainPanel(
-          fluidRow(box(d1, htmlOutput("plot1"))),
-          br(),
+          # fluidRow(box(d1, htmlOutput("plot1"))),
+          # br(),
           leafletOutput("map"),
-          plotOutput("line", height = "200px"),
-          fluidRow(strong("Winning Projects")),
-          tableOutput("titles")
+          plotOutput("line", height = "200px")
+          # fluidRow(strong("Winning Projects")),
+          # tableOutput("titles")
         )
       )
     ),
 
-        #tabPanel("Chronologically", plotOutput("line", height = "200px")),
   tabPanel(
     "Winning Projects",
     style = "width: 90%; margin: auto;",
-    tags$p(
-      fluidRow(strong("Best Visualizations")),
-      tags$a("A predictive tool to identity at risk adolescents", href = "https://www2.stat.duke.edu/datafest/winning-projects/FishSwish-Presentation.pdf")
+    sidebarLayout(
+      sidebarPanel(
+        selectizeInput("year_choice",
+                    "Year",
+                    choices = pull(datafest,"year"),
+                    selected = NULL,
+                    multiple = TRUE),
+
+        selectizeInput("host_choice",
+                    "Host University",
+                    choices = pull(datafest, "host"),
+                    selected = NULL,
+                    multiple = TRUE),
+
+        # selectizeInput("award_choice",
+        #             "Award",
+        #             choices = c("Best Insight", "Best Visualization", "Best Use of External Data"),
+        #             selected = NULL,
+        #             multiple = TRUE)
       ),
-    tags$p(
-      fluidRow(strong("Best Insight")),
-      tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-chili-chill-presentation.pdf")
-    ),
-    tags$p(
-      fluidRow(strong("Investigation into Elm City Stories’ MiniGame Design")),
-      tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-tie-presentation.pdf")
+
+      mainPanel(
+        tableOutput("Winning Titles")
+      )
+
+
     )
   )
 )
 )
+  #   tags$p(
+  #     fluidRow(strong("Best Visualizations")),
+  #     tags$a("A predictive tool to identity at risk adolescents", href = "https://www2.stat.duke.edu/datafest/winning-projects/FishSwish-Presentation.pdf")
+  #     ),
+  #   tags$p(
+  #     fluidRow(strong("Best Insight")),
+  #     tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-chili-chill-presentation.pdf")
+  #   ),
+  #   tags$p(
+  #     fluidRow(strong("Investigation into Elm City Stories’ MiniGame Design")),
+  #     tags$a("Reordering minigames with personalized Recommendation System", href = "https://www2.stat.duke.edu/datafest/winning-projects/team-tie-presentation.pdf")
+  #   )
+  # )
+
+
 
 
 
@@ -127,17 +156,19 @@ server <- function(input, output, session) {
            subtitle = "Total number of participants for each year")
 
   })
-  output$titles <- renderTable(
-    datafest_titles %>%
+  titles_subset <- reactive({
+    req(input$year_choice)
+    req(input$host_choice)
+    filter(datafest_titles, year == input$year_choice, host == input$host_choice)
+  })
 
-      filter(year == input$year),
+  output$titles <- renderTable(
+    titles_subset(),
     hover = TRUE,
     striped = TRUE,
-    align = "lcccr",
     digits = 0,
     title = "Winning Projects"
-    )
-}
+    )}
 
 # run app -----------------------------------------------------------
 shinyApp(ui, server)
