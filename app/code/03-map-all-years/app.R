@@ -5,7 +5,7 @@ source("helper.R", local = TRUE)
 
 datafest_titles <- datafest %>%
   select(Awards, host, year, Title, Team, Presentation)
-datafest_titles[nrow(datafest_titles)+1,] = list("Best Insight", "Duke University", 2022, "Reordering minigames with personalized Recommendation System", "Chill Chill", "https://www2.stat.duke.edu/datafest/winning-projects/team-chili-chill-presentation.pdf")
+datafest_titles[nrow(datafest_titles)+1,] = list("Best Insight", "Duke University", 2022, "Reordering minigames with personalized Recommendation System", '"Chill Chill"', "https://www2.stat.duke.edu/datafest/winning-projects/team-chili-chill-presentation.pdf")
 
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
@@ -22,7 +22,7 @@ ui <- fluidPage(
                       sep = ""),
           br(),
           p("This app is designed to demonstrate the growth and spread of",
-            tags$a( = "http://www.amstat.org/education/datafest/", "ASA DataFest"),
+            tags$a(href = "http://www.amstat.org/education/datafest/", "ASA DataFest"),
             "over the years. Click on the points to find out more about each event.",
             "If your institution does not appear on the list, email",
             tags$a(href = "mailto:mine@stat.duke.edu", "mine@stat.duke.edu."))
@@ -30,7 +30,6 @@ ui <- fluidPage(
         mainPanel(
           br(),
           leafletOutput("map"),
-          plotOutput("line", height = "200px"),
           wordcloud2Output("wordcloud", width = "100%", height = "400px")
         )
       )
@@ -60,11 +59,13 @@ ui <- fluidPage(
                      choices = c("Best Insight", "Best Visualization", "Best Use of External Data"),
                      selected = c("Best Insight", "Best Visualization", "Best Use of External Data"),
                      options = list(`actions-box` = TRUE),
-                     multiple = TRUE)
+                     multiple = TRUE),
+        width = 3
        ),
 
       mainPanel(
-        tableOutput("titles")
+        tableOutput("titles"),
+        width = 9
       )
 )
 
