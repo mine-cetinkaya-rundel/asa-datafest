@@ -27,6 +27,7 @@ ui <- fluidPage(
             tags$a(href = "mailto:mine@stat.duke.edu", "mine@stat.duke.edu."))
         ),
         mainPanel(
+          fluidRow(box(d1, htmlOutput("plot1"))),
           br(),
           leafletOutput("map"),
           plotOutput("line", height = "200px"),
@@ -40,10 +41,17 @@ ui <- fluidPage(
       style = "width: 90%; margin: auto;",
       sidebarLayout(
         sidebarPanel(
-
+          selectInput("college", "College", choices = unique(pull(datafest, "host"))),
+          sliderInput("uni_year", "Year", value = 2017,
+                      min = 2011, max = 2017, step = 1,
+                      animate = animationOptions(interval = 1500),
+                      sep = ""),
         ),
         mainPanel(
-
+          p("line chart with annotation"),
+          #plotOutput("line"),
+          p("histogram for majors"),
+          plotOutput("major_histogram")
         )
       )
     ),
@@ -231,22 +239,23 @@ server <- function(input, output, session) {
   })
 
 
-  # output$line <- renderPlot({
-  #
-  #   sel_part_count <- filter(part_count, year <= input$year)
-  #
-  #   ggplot(sel_part_count, aes(x = year, y = tot_part)) +
-  #     geom_line(color = "blue") +
-  #     geom_point(size = 3) +
-  #     scale_x_continuous("Year",
-  #                        limits = c(2011, 2017),
-  #                        breaks = c(2011:2017)) +
-  #     scale_y_continuous("",
-  #                        limits = c(0, max_tot_part)) +
-  #     labs(title = "DataFest participants over time",
-  #          subtitle = "Total number of participants for each year")
-  #
-  # })
+
+  output$line <- renderPlot({
+
+    sel_part_count <- filter(part_count, year <= input$uni_year)
+
+    ggplot(sel_part_count, aes(x = year, y = tot_part)) +
+      geom_line(color = "blue") +
+      geom_point(size = 3) +
+      scale_x_continuous("Year",
+                         limits = c(2011, 2017),
+                         breaks = c(2011:2017)) +
+      scale_y_continuous("",
+                         limits = c(0, max_tot_part)) +
+      labs(title = "DataFest participants over time",
+           subtitle = "Total number of participants for each year")
+
+  })
 
     titles_subset <- reactive({
       req(input$year_choice)
@@ -268,6 +277,16 @@ server <- function(input, output, session) {
 
     df <- data.frame(Major,Freq)
     wordcloud2(data=df)
+  })
+
+  #make the major histogram responsive/use real data
+  output$major_histogram <- renderPlot ({
+    Major <- c("Stats", "Computer Science", "Pure Math", "Applied Math","A","B","C")
+    Freq <- c(23, 41, 32, 58,3,2,1)
+
+    df <- data.frame(Major,Freq)
+    ggplot(df, aes(x = Freq, y = Major))+
+      geom_col( width = 0.7) + coord_flip()
   })
 }
 
