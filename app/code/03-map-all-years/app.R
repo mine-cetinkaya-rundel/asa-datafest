@@ -28,6 +28,7 @@ ui <- fluidPage(
         ),
         mainPanel(
           br(),
+          fluidRow(box(d1, htmlOutput("plot1"))),
           leafletOutput("map"),
           plotOutput("line", height = "200px"),
           wordcloud2Output("wordcloud", width = "100%", height = "400px")
