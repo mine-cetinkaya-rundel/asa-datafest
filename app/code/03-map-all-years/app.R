@@ -30,7 +30,7 @@ ui <- fluidPage(
           fluidRow(box(d1, htmlOutput("plot1"))),
           br(),
           leafletOutput("map"),
-          plotOutput("line", height = "200px"),
+          #plotOutput("line", height = "200px"),
           wordcloud2Output("wordcloud", width = "100%", height = "400px")
         )
       )
@@ -48,9 +48,9 @@ ui <- fluidPage(
                       sep = ""),
         ),
         mainPanel(
-          p("line chart with annotation"),
-          #plotOutput("line"),
-          p("histogram for majors"),
+          #p("line chart with annotation"),
+          plotOutput("line", height = "200px"),
+          #p("histogram for majors"),
           plotOutput("major_histogram")
         )
       )
@@ -239,7 +239,7 @@ server <- function(input, output, session) {
   })
 
 
-
+  #use df of individual university
   output$line <- renderPlot({
 
     sel_part_count <- filter(part_count, year <= input$uni_year)
@@ -272,11 +272,11 @@ server <- function(input, output, session) {
     )
 
   output$wordcloud <- renderWordcloud2({
-    Major <- c("Stats", "Computer Science", "Pure Math", "Applied Math","A","B","C")
-    Freq <- c(23, 41, 32, 58,3,2,1)
+    Major <- c("Stats", "Computer Science", "Pure Math", "Applied Math","Business")
+    Freq <- c(23, 41, 32, 58,10)
 
     df <- data.frame(Major,Freq)
-    wordcloud2(data=df)
+    wordcloud2(data=df,size=.2)
   })
 
   #make the major histogram responsive/use real data
