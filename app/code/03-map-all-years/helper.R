@@ -8,6 +8,7 @@ library(praise)
 library(usethis)
 library(wordcloud2)
 library(shinyWidgets)
+library(shinydashboard)
 
 
 # load data ---------------------------------------------------------
