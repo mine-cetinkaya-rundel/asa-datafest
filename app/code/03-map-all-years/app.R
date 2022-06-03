@@ -6,7 +6,12 @@ source("helper.R", local = TRUE)
 datafest_titles <- datafest %>%
   select(Awards, host, year, Title, Team, Presentation)
 datafest_titles[nrow(datafest_titles)+1,] = list("Best Insight", "Duke University", 2022, "Reordering minigames with personalized Recommendation System", '"Chill Chill"', "https://www2.stat.duke.edu/datafest/winning-projects/team-chili-chill-presentation.pdf")
-
+datafest_titles <- datafest_titles %>%
+  mutate(
+    Presentation = paste0("<a href='", Presentation, "'>", Presentation, "</a>"
+    )
+  )
+# datafest_titles[1] <- toTitleCase(datafest_titles[1])
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
   # theme = shinytheme(<lumen>),
@@ -236,7 +241,7 @@ server <- function(input, output, session) {
     })
 
   output$titles <- renderTable(
-    titles_subset(),
+    {titles_subset()}, sanitize.text.function = function(x) x,
     hover = TRUE,
     striped = TRUE,
     digits = 0
