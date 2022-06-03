@@ -5,7 +5,13 @@ source("helper.R", local = TRUE)
 
 datafest_titles <- datafest %>%
   select(Awards, host, year, Title, Team, Presentation)
-
+datafest_titles[nrow(datafest_titles)+1,] = list("Best Insight", "Duke University", 2022, "Reordering minigames with personalized Recommendation System", '"Chill Chill"', "https://www2.stat.duke.edu/datafest/winning-projects/team-chili-chill-presentation.pdf")
+datafest_titles <- datafest_titles %>%
+  mutate(
+    Presentation = paste0("<a href='", Presentation, "'>", Presentation, "</a>"
+    )
+  )
+# datafest_titles[1] <- toTitleCase(datafest_titles[1])
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
   # theme = shinytheme(<lumen>),
@@ -30,7 +36,6 @@ ui <- fluidPage(
           br(),
           fluidRow(box(d1, htmlOutput("plot1"))),
           leafletOutput("map"),
-          plotOutput("line", height = "200px"),
           wordcloud2Output("wordcloud", width = "100%", height = "400px")
         )
       )
@@ -43,7 +48,7 @@ ui <- fluidPage(
       sidebarPanel(
         pickerInput("year_choice",
                      "Year",
-                     choices = unique(pull(datafest, "year")),
+                     choices = c(unique(pull(datafest, "year")), "2022"),
                      selected = c(datafest$year),
                      options = list(`actions-box` = TRUE),
                      multiple = TRUE),
@@ -60,11 +65,13 @@ ui <- fluidPage(
                      choices = c("Best Insight", "Best Visualization", "Best Use of External Data"),
                      selected = c("Best Insight", "Best Visualization", "Best Use of External Data"),
                      options = list(`actions-box` = TRUE),
-                     multiple = TRUE)
+                     multiple = TRUE),
+        width = 3
        ),
 
       mainPanel(
-        tableOutput("titles")
+        tableOutput("titles"),
+        width = 9
       )
 )
 
@@ -234,7 +241,7 @@ server <- function(input, output, session) {
     })
 
   output$titles <- renderTable(
-    titles_subset(),
+    {titles_subset()}, sanitize.text.function = function(x) x,
     hover = TRUE,
     striped = TRUE,
     digits = 0
