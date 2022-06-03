@@ -12,7 +12,7 @@ library(shinyWidgets)
 
 # load data ---------------------------------------------------------
 
-datafest <- read_csv(here::here("/Users/yangzhenyu/asa-datafest/app/data/datafest.csv"))
+datafest <- read_csv(here::here("app/data/datafest.csv"))
 datafest <- datafest %>%
   mutate(Awards = "", Title = "", Team = "", Presentation = "")
 
