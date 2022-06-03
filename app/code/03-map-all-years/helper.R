@@ -8,13 +8,14 @@ library(praise)
 library(usethis)
 library(wordcloud2)
 library(shinyWidgets)
+library(shinydashboard)
 
 
 # load data ---------------------------------------------------------
 
 datafest <- read_csv(here::here("app/data/datafest.csv"))
 datafest <- datafest %>%
-  mutate(insight = "", insight_pre = "", visualization = "", visualization_pre = "", external = "", external_pre = "")
+  mutate(Awards = "", Title = "", Team = "", Presentation = "")
 
 
 # set colors --------------------------------------------------------
