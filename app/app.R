@@ -290,3 +290,5 @@ server <- function(input, output, session) {
 
 # run app -----------------------------------------------------------
 shinyApp(ui, server)
+# <iframe src="jenyy0416.shinyapps.io" width: 100%; height: 500px;"</iframe>
+
