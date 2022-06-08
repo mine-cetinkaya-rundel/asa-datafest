@@ -6,7 +6,7 @@ library(shinythemes)
 library(here)
 library(praise)
 library(usethis)
-library(wordcloud2)
+library(wordcloud)
 library(shinyWidgets)
 library(shinydashboard)
 
@@ -16,7 +16,11 @@ library(shinydashboard)
 datafest <- read_csv(here::here("app/data/datafest.csv"))
 datafest <- datafest %>%
   mutate(Awards = "", Title = "", Team = "", Presentation = "")
+major_df <- read_csv(here::here("app/data/majors.csv"))
 
+# get data for universities page
+universities_df <- datafest %>%
+  select(host, year, num_part)
 
 # set colors --------------------------------------------------------
 href_color <- "#9966CC"
@@ -35,8 +39,9 @@ part_count <- datafest %>%
   group_by(year) %>%
   summarise(tot_part = sum(num_part, na.rm = TRUE))
 
-min_tot_part <- min(part_count$tot_part)
-max_tot_part <- max(part_count$tot_part)
+#make main and max according to min and max of inputted college, change year scale?
+#min_tot_part <- min(part_count$tot_part)
+#max_tot_part <- max(part_count$tot_part)
 
 
 # calculate total countries participating for each year ------------------------
