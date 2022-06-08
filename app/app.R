@@ -11,7 +11,8 @@ datafest_titles <- datafest_titles %>%
     Presentation = paste0("<a href='", Presentation, "'>", Presentation, "</a>"
     )
   )
-# datafest_titles[1] <- toTitleCase(datafest_titles[1])
+names(datafest_titles) <- tools::toTitleCase(names(datafest_titles))
+print(names(datafest_titles))
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
   # theme = shinytheme(<lumen>),
@@ -69,23 +70,21 @@ ui <- fluidPage(
         pickerInput("year_choice",
                      "Year",
                      choices = c(unique(pull(datafest, "year")), "2022"),
-                     selected = c(datafest$year),
                      options = list(`actions-box` = TRUE),
                      multiple = TRUE),
 
          pickerInput("host_choice",
                      "Host University",
                      choices = unique(pull(datafest, "host")),
-                     selected = c(datafest$host),
                      options = list(`actions-box` = TRUE),
                      multiple = TRUE),
 
          pickerInput("award_choice",
                      "Award",
                      choices = c("Best Insight", "Best Visualization", "Best Use of External Data"),
-                     selected = c("Best Insight", "Best Visualization", "Best Use of External Data"),
                      options = list(`actions-box` = TRUE),
                      multiple = TRUE),
+        actionButton(inputId = "search", label = "Search"),
         width = 3
        ),
 
@@ -249,24 +248,29 @@ server <- function(input, output, session) {
 
   })
 
-
-    titles_subset <- reactive({
-      req(input$year_choice)
-      req(input$host_choice)
-      req(input$award_choice)
-      filter(
-        datafest_titles,
-        Awards %in% input$award_choice,
-        year %in% input$year_choice,
-        host %in% input$host_choice)
-    })
+  titles_subset <- reactive({
+    if(is.null(input$year_choice)&is.null(input$host_choice)&is.null(input$award_choice))
+    {return(datafest_titles)}
+    else{
+    bindEvent(input$search)
+    req(input$year_choice)
+    req(input$host_choice)
+    req(input$award_choice)
+    filter(
+      datafest_titles,
+      Awards %in% input$award_choice,
+      year %in% input$year_choice,
+      host %in% input$host_choice)
+  }})
 
   output$titles <- renderTable(
     {titles_subset()}, sanitize.text.function = function(x) x,
     hover = TRUE,
     striped = TRUE,
     digits = 0
-    )
+  )
+
+
 
   output$wordcloud <- renderWordcloud2({
     Major <- c("Stats", "Computer Science", "Pure Math", "Applied Math","Business")
