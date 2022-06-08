@@ -38,7 +38,11 @@ ui <- fluidPage(
           fluidRow(box(d1, htmlOutput("plot1"))),
           br(),
           leafletOutput("map"),
+<<<<<<< HEAD:app/code/03-map-all-years/app.R
           plotOutput("wordcloud", width = "100%", height = "400px")
+=======
+          # wordcloud2Output("wordcloud", width = "100%", height = "400px")
+>>>>>>> b4daced3cdba3ae64754471748c6a4983608eaf9:app/app.R
         )
       )
     ),
@@ -290,3 +294,5 @@ server <- function(input, output, session) {
 
 # run app -----------------------------------------------------------
 shinyApp(ui, server)
+# <iframe src="jenyy0416.shinyapps.io" width: 100%; height: 500px;"</iframe>
+
