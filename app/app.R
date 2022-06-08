@@ -12,7 +12,8 @@ datafest_titles <- datafest_titles %>%
     )
   )
 names(datafest_titles) <- tools::toTitleCase(names(datafest_titles))
-print(names(datafest_titles))
+
+major_only <- major_df$Major_Breakdown
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
   # theme = shinytheme(<lumen>),
@@ -37,13 +38,15 @@ ui <- fluidPage(
           fluidRow(box(d1, htmlOutput("plot1"))),
           br(),
           leafletOutput("map"),
-          # wordcloud2Output("wordcloud", width = "100%", height = "400px")
+
+          plotOutput("wordcloud", width = "100%", height = "400px")
+
         )
       )
     ),
 
     tabPanel(
-      "Universities",
+      "Host Institutions",
       style = "width: 90%; margin: auto;",
       sidebarLayout(
         sidebarPanel(
@@ -54,10 +57,9 @@ ui <- fluidPage(
                       sep = ""),
         ),
         mainPanel(
-          #p("line chart with annotation"),
           plotOutput("line", height = "200px"),
-          #p("histogram for majors"),
-          plotOutput("major_histogram")
+          p("major distribution"),
+          textOutput("major_distribution")
         )
       )
     ),
@@ -232,10 +234,12 @@ server <- function(input, output, session) {
 
   #use df of individual university
   output$line <- renderPlot({
+    sel_part_count <- filter(universities_df, year <= input$uni_year, host == input$college)
+    min_tot_part <- min(sel_part_count$num_part)
+    uni_max <- filter(universities_df, host == input$college)$num_part
+    max_tot_part <- max(uni_max)
 
-    sel_part_count <- filter(part_count, year <= input$uni_year)
-
-    ggplot(sel_part_count, aes(x = year, y = tot_part)) +
+    ggplot(sel_part_count, aes(x = year, y = num_part)) +
       geom_line(color = "blue") +
       geom_point(size = 3) +
       scale_x_continuous("Year",
@@ -272,23 +276,20 @@ server <- function(input, output, session) {
 
 
 
-  output$wordcloud <- renderWordcloud2({
+  output$wordcloud <- renderPlot({
     Major <- c("Stats", "Computer Science", "Pure Math", "Applied Math","Business")
-    Freq <- c(23, 41, 32, 58,10)
+    Freq <- c(23, 41, 32, 58,10,3,2)
 
-    df <- data.frame(Major,Freq)
-    wordcloud2(data=df,size=.2)
+    #dev.new(width = 10000, height = 10000, unit = "px")
+    #DF <- as.data.frame(YourList)
+    wordcloud(words = major_only, freq = Freq, rot.per=0, fixed.asp = FALSE, colors=brewer.pal(8, "Spectral"),scale = c(6,0.5))
   })
 
-  #make the major histogram responsive/use real data
-  output$major_histogram <- renderPlot ({
-    Major <- c("Stats", "Computer Science", "Pure Math", "Applied Math","A","B","C")
-    Freq <- c(23, 41, 32, 58,3,2,1)
-
-    df <- data.frame(Major,Freq)
-    ggplot(df, aes(x = Freq, y = Major))+
-      geom_col( width = 0.7) + coord_flip()
+  output $major_distribution <- renderText({
+    distr <- filter(major_df, Institution == input$college)
+    distr
   })
+
 }
 
 
