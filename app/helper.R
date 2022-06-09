@@ -22,17 +22,63 @@ major_df <- read_csv(here::here("app/data/majors.csv"))
 universities_df <- datafest %>%
   select(host, year, num_part)
 
-# set colors --------------------------------------------------------
-href_color <- "#9966CC"
-marker_color <- "darkseagreen"
-part_color <- "#CC9966"
-bins <- c(0, 10, 20, 40, 50, 100, 200, 300, 400, Inf)
-pal <- colorBin("Blues", domain = states$num_par, bins = bins)
-# set map bounds ----------------------------------------------------
+
+
+# Map
+
 left <- floor(min(datafest$lon))
 right <- ceiling(max(datafest$lon))
 bottom <- floor(min(datafest$lat))
 top <- ceiling(max(datafest$lat))
+
+href_color <- "#9966CC"
+marker_color <- "darkseagreen"
+part_color <- "#CC9966"
+
+states <- geojsonio::geojson_read("https://rstudio.github.io/leaflet/json/us-states.geojson", what = "sp")
+countries <- geojsonio::geojson_read("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json", what = "sp")
+country <- countries[countries$name %in% datafest$country,]
+
+country$density = NA
+states <- rbind(states,country)
+states$num_par=0
+for (i in 1:nrow(states)) {
+  for (j in 1:nrow(participants)) {
+    if (states$name[i] == participants$name[j]) {
+      if (!is.na(participants$num_part[j])) {
+        states$num_par[i] = states$num_par[i] + participants$num_part[j]
+      }
+    }
+  }
+}
+
+bins <- c(0, 10, 20, 40, 100, 150, 300, 400, 600, 1000, max(states$num_par))
+pal <- colorBin("Blues", domain = states$num_par, bins = bins)
+
+labels <- sprintf(
+  "<strong>%s</strong>",
+  states$name
+) %>% lapply(htmltools::HTML)
+
+host_text <- paste0(
+  "<b><a href='", datafest$url, "' style='color:", href_color, "'>", datafest$host, "</a></b>"
+)
+
+other_inst_text <- paste0(
+  ifelse(is.na(datafest$other_inst),
+         "",
+         paste0("<br>", "with participation from ", datafest$other_inst))
+)
+
+part_text <- paste0(
+  "<font color=", part_color,">", datafest$num_part, " participants</font>"
+)
+
+popups <- paste0(
+  host_text, other_inst_text, "<br>" , part_text
+)
+
+
 
 # calculate total participants for each year ------------------------
 part_count <- datafest %>%
