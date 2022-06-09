@@ -12,8 +12,9 @@ datafest_titles <- datafest_titles %>%
     )
   )
 
+names(datafest_titles) <- tools::toTitleCase(names(datafest_titles))
 major_only <- major_df$Major_Breakdown
-# datafest_titles[1] <- toTitleCase(datafest_titles[1])
+
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
   # theme = shinytheme(<lumen>),
@@ -72,23 +73,21 @@ ui <- fluidPage(
         pickerInput("year_choice",
                      "Year",
                      choices = c(unique(pull(datafest, "year")), "2022"),
-                     selected = c(datafest$year),
                      options = list(`actions-box` = TRUE),
                      multiple = TRUE),
 
          pickerInput("host_choice",
                      "Host University",
                      choices = unique(pull(datafest, "host")),
-                     selected = c(datafest$host),
                      options = list(`actions-box` = TRUE),
                      multiple = TRUE),
 
          pickerInput("award_choice",
                      "Award",
                      choices = c("Best Insight", "Best Visualization", "Best Use of External Data"),
-                     selected = c("Best Insight", "Best Visualization", "Best Use of External Data"),
                      options = list(`actions-box` = TRUE),
                      multiple = TRUE),
+        actionButton(inputId = "search", label = "Search"),
         width = 3
        ),
 
@@ -111,41 +110,7 @@ server <- function(input, output, session) {
   })
 
   output$map <- renderLeaflet({
-    leaflet() %>%
-      addPolygons(
-        data = states,
-        fillColor = ~pal(num_par),
-        weight = 2,
-        opacity = 1,
-        color = "white",
-        dashArray = "3",
-        fillOpacity = 0.7,
-        highlightOptions = highlightOptions(
-          weight = 1,
-          color = "blanchedalmond",
-          dashArray = "",
-          fillOpacity = 0.5,
-          bringToFront = FALSE),
-        label = labels,
-        labelOptions = labelOptions(
-          style = list("font-weight" = "normal",
-                       padding = "3px 8px",
-                       "color" = "#999999"),
-          textsize = "10px",
-          direction = "auto")) %>%
-      addLegend(pal = pal, values = states$num_par, opacity = 0.5, title = NULL,
-                position = "bottomright") %>%
-      addTiles() %>%
-      fitBounds(lng1 = left, lat1 = bottom, lng2 = right, lat2 = top) %>%
-      addCircleMarkers(
-        lng = datafest_2017$lon, lat = datafest_2017$lat,
-        radius = log(datafest_2017$num_part) * 1.2,
-        fillColor = marker_color,
-        color = marker_color,
-        weight = 1,
-        fillOpacity = 0.5,
-        popup = popups)
-
+    leaflet()
   })
 
   observeEvent(d(), {
@@ -176,11 +141,14 @@ server <- function(input, output, session) {
     )
 
     participants <- d() %>%
-      mutate(state = ifelse(country == "Germany", "Germany", state)) %>%
-      mutate(state = ifelse(country == "Canada", "Canada", state)) %>%
+      mutate(state = case_when(country == "Germany"~ "Germany",
+                               country == "Canada"~ "Canada",
+                               state == "Minnessota"~ "Minnesota",
+                               TRUE ~ state)) %>%
       select(state, num_part) %>%
       rename(name = state)
 
+    # calculate total participants in each state
     states$num_par=0
     for (i in 1:nrow(states)) {
       for (j in 1:nrow(participants)) {
@@ -192,19 +160,15 @@ server <- function(input, output, session) {
       }
     }
 
-
-
-
-
     mapProxy %>%
       addControl(h1(input$year), position = "topright") %>%
       addPolygons(
         data = states,
         fillColor = ~pal(num_par),
-        weight = 5,
-        opacity = 0.8,
-        color = "cornsilk1",
-        dashArray = "2",
+        weight = 1,
+        opacity = 1,
+        color = "gray",
+        dashArray = "3",
         fillOpacity = 1,
         highlightOptions = highlightOptions(
           weight = 3,
@@ -219,7 +183,7 @@ server <- function(input, output, session) {
                        "color" = "#999999"),
           textsize = "10px",
           direction = "auto")) %>%
-      addLegend(pal = pal, values = states$num_par, opacity = 0.7, title = NULL,
+      addLegend(pal = pal, values = states$num_par, opacity = 0.7, title = "Number of Participants",
                 position = "bottomright") %>%
       addCircleMarkers(lng = d()$lon, lat = d()$lat,
                        radius = log(d()$num_part),
@@ -254,24 +218,29 @@ server <- function(input, output, session) {
 
   })
 
-
-    titles_subset <- reactive({
-      req(input$year_choice)
-      req(input$host_choice)
-      req(input$award_choice)
-      filter(
-        datafest_titles,
-        Awards %in% input$award_choice,
-        year %in% input$year_choice,
-        host %in% input$host_choice)
-    })
+  titles_subset <- reactive({
+    if(is.null(input$year_choice)&is.null(input$host_choice)&is.null(input$award_choice))
+    {return(datafest_titles)}
+    else{
+    bindEvent(input$search)
+    req(input$year_choice)
+    req(input$host_choice)
+    req(input$award_choice)
+    filter(
+      datafest_titles,
+      Awards %in% input$award_choice,
+      year %in% input$year_choice,
+      host %in% input$host_choice)
+  }})
 
   output$titles <- renderTable(
     {titles_subset()}, sanitize.text.function = function(x) x,
     hover = TRUE,
     striped = TRUE,
     digits = 0
-    )
+  )
+
+
 
   output$wordcloud <- renderPlot({
     Major <- c("Stats", "Computer Science", "Pure Math", "Applied Math","Business")
