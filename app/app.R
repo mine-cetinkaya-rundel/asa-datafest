@@ -59,7 +59,7 @@ ui <- fluidPage(
         mainPanel(
           plotOutput("line", height = "200px"),
           p("major distribution"),
-          textOutput("major_distribution")
+          #textOutput("major_distribution")
         )
       )
     ),
