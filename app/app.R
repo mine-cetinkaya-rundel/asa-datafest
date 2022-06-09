@@ -167,8 +167,8 @@ server <- function(input, output, session) {
         fillColor = ~pal(num_par),
         weight = 1,
         opacity = 1,
-        color = "gray",
-        dashArray = "3",
+        color = "lightgray",
+        dashArray = "",
         fillOpacity = 1,
         highlightOptions = highlightOptions(
           weight = 3,
