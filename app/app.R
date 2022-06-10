@@ -11,10 +11,14 @@ datafest_titles <- datafest_titles %>%
     Presentation = paste0("<a href='", Presentation, "'>", Presentation, "</a>"
     )
   )
+<<<<<<< HEAD
+# datafest_titles[1] <- toTitleCase(datafest_titles[1])
+=======
 
 names(datafest_titles) <- tools::toTitleCase(names(datafest_titles))
 major_only <- major_df$Major_Breakdown
 
+>>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
   # theme = shinytheme(<lumen>),
@@ -36,6 +40,12 @@ ui <- fluidPage(
             tags$a(href = "mailto:mine@stat.duke.edu", "mine@stat.duke.edu."))
         ),
         mainPanel(
+<<<<<<< HEAD
+          br(),
+          fluidRow(box(d1, htmlOutput("plot1"))),
+          leafletOutput("map"),
+          wordcloud2Output("wordcloud", width = "100%", height = "400px")
+=======
           fluidRow(box(d1, htmlOutput("plot1"))),
           br(),
           leafletOutput("map"),
@@ -61,6 +71,7 @@ ui <- fluidPage(
           plotOutput("line", height = "200px"),
           p("major distribution"),
           #textOutput("major_distribution")
+>>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
         )
       )
     ),
@@ -73,21 +84,35 @@ ui <- fluidPage(
         pickerInput("year_choice",
                      "Year",
                      choices = c(unique(pull(datafest, "year")), "2022"),
+<<<<<<< HEAD
+                     selected = c(datafest$year),
+=======
+>>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
                      options = list(`actions-box` = TRUE),
                      multiple = TRUE),
 
          pickerInput("host_choice",
                      "Host University",
                      choices = unique(pull(datafest, "host")),
+<<<<<<< HEAD
+                     selected = c(datafest$host),
+=======
+>>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
                      options = list(`actions-box` = TRUE),
                      multiple = TRUE),
 
          pickerInput("award_choice",
                      "Award",
                      choices = c("Best Insight", "Best Visualization", "Best Use of External Data"),
+<<<<<<< HEAD
+                     selected = c("Best Insight", "Best Visualization", "Best Use of External Data"),
+                     options = list(`actions-box` = TRUE),
+                     multiple = TRUE),
+=======
                      options = list(`actions-box` = TRUE),
                      multiple = TRUE),
         actionButton(inputId = "search", label = "Search"),
+>>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
         width = 3
        ),
 
@@ -110,7 +135,9 @@ server <- function(input, output, session) {
   })
 
   output$map <- renderLeaflet({
-    leaflet()
+    leaflet() %>%
+      addTiles() %>%
+      fitBounds(lng1 = left, lat1 = bottom, lng2 = right, lat2 = top)
   })
 
   observeEvent(d(), {
@@ -149,6 +176,7 @@ server <- function(input, output, session) {
       rename(name = state)
 
     # calculate total participants in each state
+
     states$num_par=0
     for (i in 1:nrow(states)) {
       for (j in 1:nrow(participants)) {
@@ -183,8 +211,10 @@ server <- function(input, output, session) {
                        "color" = "#999999"),
           textsize = "10px",
           direction = "auto")) %>%
+
       addLegend(pal = pal, values = states$num_par, opacity = 0.7, title = "Number of Participants",
                 position = "bottomright") %>%
+
       addCircleMarkers(lng = d()$lon, lat = d()$lat,
                        radius = log(d()$num_part),
                        fillColor = marker_color,
@@ -196,7 +226,6 @@ server <- function(input, output, session) {
 
 
   })
-
 
   #use df of individual university
   output$line <- renderPlot({
@@ -240,8 +269,6 @@ server <- function(input, output, session) {
     digits = 0
   )
 
-
-
   output$wordcloud <- renderPlot({
     Major <- c("Stats", "Computer Science", "Pure Math", "Applied Math","Business")
     Freq <- c(23, 41, 32, 58,10,3,2)
@@ -261,5 +288,4 @@ server <- function(input, output, session) {
 
 # run app -----------------------------------------------------------
 shinyApp(ui, server)
-# <iframe src="jenyy0416.shinyapps.io" width: 100%; height: 500px;"</iframe>
 
