@@ -135,45 +135,9 @@ server <- function(input, output, session) {
   })
 
   output$map <- renderLeaflet({
-<<<<<<< HEAD
     leaflet() %>%
-      addPolygons(
-        data = states,
-        fillColor = ~pal(num_par),
-        weight = 2,
-        opacity = 1,
-        color = "white",
-        dashArray = "3",
-        fillOpacity = 0.7,
-        highlightOptions = highlightOptions(
-          weight = 1,
-          color = "blanchedalmond",
-          dashArray = "",
-          fillOpacity = 0.5,
-          bringToFront = FALSE),
-        label = labels,
-        labelOptions = labelOptions(
-          style = list("font-weight" = "normal",
-                       padding = "3px 8px",
-                       "color" = "#999999"),
-          textsize = "10px",
-          direction = "auto")) %>%
-      addLegend(pal = pal, values = states$num_par, opacity = 0.5, title = NULL,
-                position = "bottomright") %>%
       addTiles() %>%
-      fitBounds(lng1 = left, lat1 = bottom, lng2 = right, lat2 = top) %>%
-      addCircleMarkers(
-        lng = datafest_2017$lon, lat = datafest_2017$lat,
-        radius = log(datafest_2017$num_part) * 1.2,
-        fillColor = marker_color,
-        color = marker_color,
-        weight = 1,
-        fillOpacity = 0.5,
-        popup = popups)
-
-=======
-    leaflet()
->>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
+      fitBounds(lng1 = left, lat1 = bottom, lng2 = right, lat2 = top)
   })
 
   observeEvent(d(), {
@@ -204,13 +168,6 @@ server <- function(input, output, session) {
     )
 
     participants <- d() %>%
-<<<<<<< HEAD
-      mutate(state = ifelse(country == "Germany", "Germany", state)) %>%
-      mutate(state = ifelse(country == "Canada", "Canada", state)) %>%
-      select(state, num_part) %>%
-      rename(name = state)
-
-=======
       mutate(state = case_when(country == "Germany"~ "Germany",
                                country == "Canada"~ "Canada",
                                state == "Minnessota"~ "Minnesota",
@@ -219,7 +176,7 @@ server <- function(input, output, session) {
       rename(name = state)
 
     # calculate total participants in each state
->>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
+
     states$num_par=0
     for (i in 1:nrow(states)) {
       for (j in 1:nrow(participants)) {
@@ -231,29 +188,15 @@ server <- function(input, output, session) {
       }
     }
 
-<<<<<<< HEAD
-
-
-
-
-=======
->>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
     mapProxy %>%
       addControl(h1(input$year), position = "topright") %>%
       addPolygons(
         data = states,
         fillColor = ~pal(num_par),
-<<<<<<< HEAD
-        weight = 5,
-        opacity = 0.8,
-        color = "cornsilk1",
-        dashArray = "2",
-=======
         weight = 1,
         opacity = 1,
         color = "lightgray",
         dashArray = "",
->>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
         fillOpacity = 1,
         highlightOptions = highlightOptions(
           weight = 3,
@@ -268,12 +211,10 @@ server <- function(input, output, session) {
                        "color" = "#999999"),
           textsize = "10px",
           direction = "auto")) %>%
-<<<<<<< HEAD
-      addLegend(pal = pal, values = states$num_par, opacity = 0.7, title = NULL,
-=======
+    
       addLegend(pal = pal, values = states$num_par, opacity = 0.7, title = "Number of Participants",
->>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
                 position = "bottomright") %>%
+    
       addCircleMarkers(lng = d()$lon, lat = d()$lat,
                        radius = log(d()$num_part),
                        fillColor = marker_color,
