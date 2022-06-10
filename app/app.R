@@ -11,10 +11,14 @@ datafest_titles <- datafest_titles %>%
     Presentation = paste0("<a href='", Presentation, "'>", Presentation, "</a>"
     )
   )
+<<<<<<< HEAD
+# datafest_titles[1] <- toTitleCase(datafest_titles[1])
+=======
 
 names(datafest_titles) <- tools::toTitleCase(names(datafest_titles))
 major_only <- major_df$Major_Breakdown
 
+>>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
 # define ui ---------------------------------------------------------
 ui <- fluidPage(
   # theme = shinytheme(<lumen>),
@@ -36,6 +40,12 @@ ui <- fluidPage(
             tags$a(href = "mailto:mine@stat.duke.edu", "mine@stat.duke.edu."))
         ),
         mainPanel(
+<<<<<<< HEAD
+          br(),
+          fluidRow(box(d1, htmlOutput("plot1"))),
+          leafletOutput("map"),
+          wordcloud2Output("wordcloud", width = "100%", height = "400px")
+=======
           fluidRow(box(d1, htmlOutput("plot1"))),
           br(),
           leafletOutput("map"),
@@ -61,6 +71,7 @@ ui <- fluidPage(
           plotOutput("line", height = "200px"),
           p("major distribution"),
           #textOutput("major_distribution")
+>>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
         )
       )
     ),
@@ -73,21 +84,35 @@ ui <- fluidPage(
         pickerInput("year_choice",
                      "Year",
                      choices = c(unique(pull(datafest, "year")), "2022"),
+<<<<<<< HEAD
+                     selected = c(datafest$year),
+=======
+>>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
                      options = list(`actions-box` = TRUE),
                      multiple = TRUE),
 
          pickerInput("host_choice",
                      "Host University",
                      choices = unique(pull(datafest, "host")),
+<<<<<<< HEAD
+                     selected = c(datafest$host),
+=======
+>>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
                      options = list(`actions-box` = TRUE),
                      multiple = TRUE),
 
          pickerInput("award_choice",
                      "Award",
                      choices = c("Best Insight", "Best Visualization", "Best Use of External Data"),
+<<<<<<< HEAD
+                     selected = c("Best Insight", "Best Visualization", "Best Use of External Data"),
+                     options = list(`actions-box` = TRUE),
+                     multiple = TRUE),
+=======
                      options = list(`actions-box` = TRUE),
                      multiple = TRUE),
         actionButton(inputId = "search", label = "Search"),
+>>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
         width = 3
        ),
 
@@ -110,7 +135,9 @@ server <- function(input, output, session) {
   })
 
   output$map <- renderLeaflet({
-    leaflet()
+    leaflet() %>%
+      addTiles() %>%
+      fitBounds(lng1 = left, lat1 = bottom, lng2 = right, lat2 = top)
   })
 
   observeEvent(d(), {
@@ -149,6 +176,7 @@ server <- function(input, output, session) {
       rename(name = state)
 
     # calculate total participants in each state
+
     states$num_par=0
     for (i in 1:nrow(states)) {
       for (j in 1:nrow(participants)) {
@@ -183,8 +211,10 @@ server <- function(input, output, session) {
                        "color" = "#999999"),
           textsize = "10px",
           direction = "auto")) %>%
+    
       addLegend(pal = pal, values = states$num_par, opacity = 0.7, title = "Number of Participants",
                 position = "bottomright") %>%
+    
       addCircleMarkers(lng = d()$lon, lat = d()$lat,
                        radius = log(d()$num_part),
                        fillColor = marker_color,
@@ -198,6 +228,36 @@ server <- function(input, output, session) {
   })
 
 
+<<<<<<< HEAD
+  # output$line <- renderPlot({
+  #
+  #   sel_part_count <- filter(part_count, year <= input$year)
+  #
+  #   ggplot(sel_part_count, aes(x = year, y = tot_part)) +
+  #     geom_line(color = "blue") +
+  #     geom_point(size = 3) +
+  #     scale_x_continuous("Year",
+  #                        limits = c(2011, 2017),
+  #                        breaks = c(2011:2017)) +
+  #     scale_y_continuous("",
+  #                        limits = c(0, max_tot_part)) +
+  #     labs(title = "DataFest participants over time",
+  #          subtitle = "Total number of participants for each year")
+  #
+  # })
+
+
+    titles_subset <- reactive({
+      req(input$year_choice)
+      req(input$host_choice)
+      req(input$award_choice)
+      filter(
+        datafest_titles,
+        Awards %in% input$award_choice,
+        year %in% input$year_choice,
+        host %in% input$host_choice)
+    })
+=======
   #use df of individual university
   output$line <- renderPlot({
     sel_part_count <- filter(universities_df, year <= input$uni_year, host == input$college)
@@ -232,12 +292,24 @@ server <- function(input, output, session) {
       year %in% input$year_choice,
       host %in% input$host_choice)
   }})
+>>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
 
   output$titles <- renderTable(
     {titles_subset()}, sanitize.text.function = function(x) x,
     hover = TRUE,
     striped = TRUE,
     digits = 0
+<<<<<<< HEAD
+    )
+
+  output$wordcloud <- renderWordcloud2({
+    Major <- c("Stats", "Computer Science", "Pure Math", "Applied Math","A","B","C")
+    Freq <- c(23, 41, 32, 58,3,2,1)
+
+    df <- data.frame(Major,Freq)
+    wordcloud2(data=df)
+  })
+=======
   )
 
 
@@ -256,10 +328,14 @@ server <- function(input, output, session) {
     distr
   })
 
+>>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
 }
 
 
 # run app -----------------------------------------------------------
 shinyApp(ui, server)
+<<<<<<< HEAD
+=======
 # <iframe src="jenyy0416.shinyapps.io" width: 100%; height: 500px;"</iframe>
 
+>>>>>>> 0ebeb628d79d6362ec7257921fd7acffc533554c
