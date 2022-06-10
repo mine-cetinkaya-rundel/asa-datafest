@@ -70,36 +70,38 @@ body <- dashboardBody(
                                   sep = "")
                       )
                   ),
-                fluidRow(plotOutput("line", height = "200px"),
-                  #p("histogram for majors"),
-                  plotOutput("major_histogram")
+                fluidRow(
+                  plotOutput("line", height = "200px"),
+                  p("major distribution"),
+                  #textOutput("major_distribution")
                   )
                 ),
         
         tabItem(tabName = "winner",
                 fluidRow(
-                  box(width = 4,
+                  box(
                   pickerInput("year_choice",
                               "Year",
-                              choices = unique(pull(datafest, "year")),
-                              selected = c(datafest$year),
+                              choices = c(unique(pull(datafest, "year")), "2022"),
                               options = list(`actions-box` = TRUE),
                               multiple = TRUE),
                   
                   pickerInput("host_choice",
                               "Host University",
+                              "Host University",
                               choices = unique(pull(datafest, "host")),
-                              selected = c(datafest$host),
                               options = list(`actions-box` = TRUE),
                               multiple = TRUE),
                   
                   pickerInput("award_choice",
                               "Award",
                               choices = c("Best Insight", "Best Visualization", "Best Use of External Data"),
-                              selected = c("Best Insight", "Best Visualization", "Best Use of External Data"),
                               options = list(`actions-box` = TRUE),
-                              multiple = TRUE)),
-                  tableOutput("titles"))
+                              multiple = TRUE),
+                  actionButton(inputId = "search", label = "Search"),
+                  width = 3
+                  ),
+                  tableOutput("titles"), width = 9)
                 )
                 )
       )

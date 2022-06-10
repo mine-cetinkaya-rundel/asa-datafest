@@ -13,11 +13,16 @@ library(shinydashboard)
 
 # load data ---------------------------------------------------------
 
-datafest <- read_csv("data/datafest.csv")
+datafest <- read_csv(here::here("app/data/datafest.csv"))
 datafest <- datafest %>%
   mutate(Awards = "", Title = "", Team = "", Presentation = "")
 
+#datafest <- datafest %>% add_column(nickname = "", .after = "host")
+#write.csv(datafest, "app/data/datafest.csv")
 major_df <- read_csv(here::here("app/data/majors.csv"))
+
+
+#Map
 
 # get data for universities page
 universities_df <- datafest %>%
@@ -28,6 +33,7 @@ left <- floor(min(datafest$lon))
 right <- ceiling(max(datafest$lon))
 bottom <- floor(min(datafest$lat))
 top <- ceiling(max(datafest$lat))
+
 
 # set colors --------------------------------------------------------
 href_color <- "#9966CC"
@@ -85,7 +91,6 @@ part_text <- paste0(
 popups <- paste0(
   host_text, other_inst_text, "<br>" , part_text
 )
-
 
 # calculate total participants for each year ------------------------
 part_count <- datafest %>%
