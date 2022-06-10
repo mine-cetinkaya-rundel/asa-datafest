@@ -1,5 +1,5 @@
 # load helpers ------------------------------------------------------
-source("/Users/Aarushi/Duke/MIDS/DataFest/asa-datafest/app/code/03-map-all-years/helper.R", local = TRUE)
+source("helper.R", local = TRUE)
 # -------------------------------------------------------------------
 
 # create a table with just winning titles ---------------------------
@@ -7,10 +7,19 @@ source("/Users/Aarushi/Duke/MIDS/DataFest/asa-datafest/app/code/03-map-all-years
 datafest_titles <- datafest %>%
   select(Awards, host, year, Title, Team, Presentation)
 
-#--------------------------------------------------------------------
-library(shiny)
-library(shinydashboard)
+datafest_titles[nrow(datafest_titles)+1,] = list("Best Insight", "Duke University", 2022, "Reordering minigames with personalized Recommendation System", '"Chill Chill"', "https://www2.stat.duke.edu/datafest/winning-projects/team-chili-chill-presentation.pdf")
 
+datafest_titles <- datafest_titles %>%
+  mutate(
+    Presentation = paste0("<a href='", Presentation, "'>", Presentation, "</a>"
+    )
+  )
+
+names(datafest_titles) <- tools::toTitleCase(names(datafest_titles))
+major_only <- major_df$Major_Breakdown
+
+
+#--------------------------------------------------------------------
 header <- dashboardHeader(title = "ASA DataFest over the years", titleWidth = "350px")
 
 sidebar <- dashboardSidebar(width = 140,collapsed = FALSE, 
@@ -31,35 +40,37 @@ body <- dashboardBody(
       id = "tabset1",height = "250px",
       tabItems(
         tabItem(tabName = "home",
-                fluidRow(box(sliderInput("year", "Year",value = 2011,
-                   min = 2011, max = 2017, step = 1,
-                   width = "200%",
-                   animate = animationOptions(interval = 1500),
-                   sep = ""))),
                 fluidRow(
                   infoBoxOutput("ParticipantsTile", width = 3),
                   infoBoxOutput("HostsTile", width = 3),
                   infoBoxOutput("CountryTile", width = 3),
                   infoBoxOutput("DataTile", width = 3)
                   ),
+                fluidRow(box(width = 12, 
+                           sliderInput("year", 
+                                       "Year",value = 2011,
+                                       min = 2011, max = 2017, step = 1,
+                                       width = "100%",
+                                       animate = animationOptions(interval = 1500),
+                                       sep = ""))),
                 br(),
-                fluidRow(
-                  leafletOutput("map",width = "870px", height = "696px"), align="center"),
+                fluidRow(leafletOutput("map")),
                 br(),
-                fluidRow(
-                  wordcloud2Output("wordcloud", width = "80%", height = "200px"),align ="center")
+                fluidRow(plotOutput("wordcloud", width = "100%", height = "400px"))
                 ),
         
         tabItem(tabName = "host",
                 fluidRow(
-                  box(width = 4,
-                      selectInput("college", "College", choices = unique(pull(datafest, "host"))),
+                  box(width = 3,
+                      selectInput("college", "College", choices = unique(pull(datafest, "host")))),
+                  box(width = 9,
                       sliderInput("uni_year", "Year", value = 2017,
                                   min = 2011, max = 2017, step = 1,
                                   animate = animationOptions(interval = 1500),
                                   sep = "")
-                      ),
-                  plotOutput("line", height = "200px"),
+                      )
+                  ),
+                fluidRow(plotOutput("line", height = "200px"),
                   #p("histogram for majors"),
                   plotOutput("major_histogram")
                   )
@@ -121,10 +132,9 @@ server <- function(input, output, session) {
   d <- reactive({
     filter(datafest, year == input$year & df == "Yes")
   })
+  
   output$map <- renderLeaflet({
-    leaflet() %>%
-      addTiles() %>%
-      fitBounds(left, bottom, right, top)
+    leaflet()
   })
   
   observeEvent(d(), {
@@ -154,22 +164,70 @@ server <- function(input, output, session) {
       host_text, other_inst_text, "<br>" , part_text
     )
     
+    participants <- d() %>%
+      mutate(state = case_when(country == "Germany"~ "Germany",
+                               country == "Canada"~ "Canada",
+                               state == "Minnessota"~ "Minnesota",
+                               TRUE ~ state)) %>%
+      select(state, num_part) %>%
+      rename(name = state)
+    
+    # calculate total participants in each state
+    states$num_par=0
+    for (i in 1:nrow(states)) {
+      for (j in 1:nrow(participants)) {
+        if (states$name[i] == participants$name[j]) {
+          if (!is.na(participants$num_part[j])) {
+            states$num_par[i] = states$num_par[i] + participants$num_part[j]
+          }
+        }
+      }
+    }
+    
     mapProxy %>%
       addControl(h1(input$year), position = "topright") %>%
+      addTiles() %>% 
+      fitBounds(lng1 = left, lat1 = bottom, lng2 = right, lat2 = top) %>% 
+      addPolygons(
+        data = states,
+        fillColor = ~pal(num_par),
+        weight = 1,
+        opacity = 1,
+        color = "lightgray",
+        dashArray = "",
+        fillOpacity = 1,
+        highlightOptions = highlightOptions(
+          weight = 3,
+          color = "white",
+          dashArray = "2",
+          fillOpacity = 0.7,
+          bringToFront = FALSE),
+        label = labels,
+        labelOptions = labelOptions(
+          style = list("font-weight" = "normal",
+                       padding = "3px 8px",
+                       "color" = "#999999"),
+          textsize = "10px",
+          direction = "auto")) %>%
+      addLegend(pal = pal, values = states$num_par, opacity = 0.7, title = "Number of Participants",
+                position = "bottomright") %>%
       addCircleMarkers(lng = d()$lon, lat = d()$lat,
                        radius = log(d()$num_part),
                        fillColor = marker_color,
                        color = marker_color,
-                       weight = 1,
+                       weight = ,
                        fillOpacity = 0.5,
                        popup = popups)
+    
+    
+    
   })
   
   ## Add Tile graphics
   output$ParticipantsTile <- renderInfoBox({
-    participants <- part_count[part_count$year == input$year, ]$tot_part
+    participant_tile <- part_count[part_count$year == input$year, ]$tot_part
     infoBox(
-    "Participants", paste0(participants), icon = icon("users"),
+    "Participants", paste0(participant_tile), icon = icon("users"),
     color = "red", fill = TRUE, width = 2.5
     )
     })
@@ -200,10 +258,12 @@ server <- function(input, output, session) {
   
   #use df of individual university
   output$line <- renderPlot({
+    sel_part_count <- filter(universities_df, year <= input$uni_year, host == input$college)
+    min_tot_part <- min(sel_part_count$num_part)
+    uni_max <- filter(universities_df, host == input$college)$num_part
+    max_tot_part <- max(uni_max)
     
-    sel_part_count <- filter(part_count, year <= input$uni_year)
-    
-    ggplot(sel_part_count, aes(x = year, y = tot_part)) +
+    ggplot(sel_part_count, aes(x = year, y = num_part)) +
       geom_line(color = "blue") +
       geom_point(size = 3) +
       scale_x_continuous("Year",
@@ -213,36 +273,50 @@ server <- function(input, output, session) {
                          limits = c(0, max_tot_part)) +
       labs(title = "DataFest participants over time",
            subtitle = "Total number of participants for each year")
+    
   })
   
   titles_subset <- reactive({
-    req(input$year_choice)
-    req(input$host_choice)
-    req(input$award_choice)
-    filter(
-      datafest_titles,
-      Awards %in% input$award_choice,
-      year %in% input$year_choice,
-      host %in% input$host_choice)
-  })
+    if(is.null(input$year_choice)&is.null(input$host_choice)&is.null(input$award_choice))
+    {return(datafest_titles)}
+    else{
+      bindEvent(input$search)
+      req(input$year_choice)
+      req(input$host_choice)
+      req(input$award_choice)
+      filter(
+        datafest_titles,
+        Awards %in% input$award_choice,
+        year %in% input$year_choice,
+        host %in% input$host_choice)
+    }})
   
   output$titles <- renderTable(
-    titles_subset(),
+    {titles_subset()}, sanitize.text.function = function(x) x,
     hover = TRUE,
     striped = TRUE,
     digits = 0
   )
   
-  #adding wordcloud
-  output$wordcloud <- renderWordcloud2({
-    Major <- c("Stats", "Computer Science", "Pure Math", "Applied Math","A","B","C")
-    Freq <- c(23, 41, 32, 58,3,2,1)
+  ## Adding Word Cloud
+  
+  output$wordcloud <- renderPlot({
+    Major <- c("Stats", "Computer Science", "Pure Math", "Applied Math","Business")
+    Freq <- c(23, 41, 32, 58,10,3,2)
     
-    df <- data.frame(Major,Freq)
-    wordcloud2(data=df)
+    #dev.new(width = 10000, height = 10000, unit = "px")
+    #DF <- as.data.frame(YourList)
+    wordcloud(words = major_only, freq = Freq, rot.per=0, fixed.asp = FALSE, colors=brewer.pal(8, "Spectral"),scale = c(6,0.5))
   })
+  
+  
+  output $major_distribution <- renderText({
+    distr <- filter(major_df, Institution == input$college)
+    distr
+  })
+  
 }
-
+  
 ############
 shinyApp(ui = ui, server = server)
 
