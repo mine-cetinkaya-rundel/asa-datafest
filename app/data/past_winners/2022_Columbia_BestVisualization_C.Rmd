@@ -1,0 +1,62 @@
+---
+title: "Datafest 2022"
+author: "Varchasvi Vedula, vvv2108"
+date: "3/27/2022"
+output: pdf_document
+---
+```{r message = F, warning = F}
+library("data.table")
+library("readr")
+library("dplyr")
+library("ggplot2")
+library(plyr)
+```
+
+```{r}
+# Reading in relevant columns only
+logs = fread("logs.csv", select = c("player_id", "event_time_dbl", "event_id"), showProgress = FALSE)
+scores = read.csv("S5_scores_cleaned.csv")
+```
+
+```{r}
+time_spent  = twoCols %>% group_by(player_id) %>% dplyr::summarize(time= max(event_time_dbl))
+
+ggplot(time_spent, aes(x = time)) + geom_histogram(fill = "#00356B") + ggtitle("Total Time Spent on Gameplay") + xlab("Time Spent") + ylab("Frequency") + theme_bw() 
+ggsave("time_hist_full.jpg")
+
+summary(time_spent$time)
+ 
+ggplot(time_spent[time_spent$time < 90000,], aes(x = time)) + geom_histogram(fill = "#00356B") + ggtitle("Total Time Spent on Gameplay (<90,000)") + xlab("Time Spent") + ylab("Frequency") + theme_bw() 
+ggsave("time_hist_zoom.jpg")
+```
+
+```{r}
+# Scores are recorded periodically for some students
+# We are only interested in the latest scores
+
+latest_score <- function(df){
+  return(df[df$weeks == max(df$weeks),])
+}
+scores <- ddply(scores, .(player_id), latest_score)
+```
+
+```{r}
+# Get counts of different event types
+event <- function(df, event_type){
+  df[paste("event", event_type, sep="")] <- df$event_id%/%100==event_type
+  return(df)
+}
+event_counts <- ddply(logs, .(player_id), event, 4) %>% ddply(.(player_id), event, 2) %>% ddply(.(player_id), event, 8) %>% ddply(.(player_id), event, 9) %>% ddply(.(player_id), event, 5) %>% group_by(player_id) %>% dplyr::summarize(knowledge = sum(event4), challenge = sum(event2), priority_sense = sum(event8), refuse_power = sum(event5), people_sense = sum(event9))
+```
+
+```{r}
+combined <- merge(x = event_counts, y = scores, by.x = "player_id", by.y  ="player_id")
+combined <- merge(x = combined, y = time_spent, by.x = "player_id", by.y  ="player_id")
+summary(lm(S5_mean~knowledge+challenge+priority_sense+refuse_power+people_sense+time, data = combined))
+```
+
+```{r}
+ggplot(combined, aes(x = knowledge)) + geom_histogram(fill = "#00356B") + ggtitle("Distribution of Knowledge Events") + xlab("Number of Knowledge Events") + ylab("Frequency") + theme_bw() 
+ggsave("knowledge.jpeg", width = 7, height = 4, units = "in")
+```
+

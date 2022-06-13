@@ -14,7 +14,6 @@ library(shinydashboard)
 # load data ---------------------------------------------------------
 
 datafest <- read_csv(here::here("app/data/datafest.csv"))
-
 major_df <- read_csv(here::here("app/data/majors.csv"))
 
 
