@@ -82,7 +82,8 @@ body <- dashboardBody(
                   box(
                   pickerInput("year_choice",
                               "Year",
-                              choices = c(unique(pull(datafest, "year")), "2022"),
+                              choices = c(unique(pull(datafest, "year"))),
+                              selected = c(datafest$year),
                               options = list(`actions-box` = TRUE),
                               multiple = TRUE),
 
@@ -90,12 +91,14 @@ body <- dashboardBody(
                               "Host University",
                               "Host University",
                               choices = unique(pull(datafest, "host")),
+                              selected = c(datafest$host),
                               options = list(`actions-box` = TRUE),
                               multiple = TRUE),
 
                   pickerInput("award_choice",
                               "Award",
                               choices = c("Best Insight", "Best Visualization", "Best Use of External Data"),
+                              selected = c(datafest$Awards),
                               options = list(`actions-box` = TRUE),
                               multiple = TRUE),
                   actionButton(inputId = "search", label = "Search"),
@@ -279,21 +282,24 @@ server <- function(input, output, session) {
   })
 
   titles_subset <- eventReactive(input$search, {
-    if(is.null(input$year_choice)&is.null(input$host_choice)&is.null(input$award_choice))
-    {return(datafest_titles)}
+    # if(is.null(input$year_choice)&is.null(input$host_choice)&is.null(input$award_choice))
+    # {return(datafest_titles)}
+    #
+    # else{
+    #
+    # ifelse(is.null(input$year_choice), {year_choice <- c(unique(pull(datafest, "year")))},{year_choice <- input$year_choice})
+    # ifelse(is.null(input$host_choice), {host_choice <- c(unique(pull(datafest, "host")))},{host_choice <- input$host_choice})
+    # ifelse(is.null(input$award_choice), {award_choice <- c(unique(pull(datafest, "Awards")))},{award_choice <- input$award_choice})
 
-    else{
-
-    ifelse(is.null(input$year_choice), {year_choice <- c(unique(pull(datafest, "year")))},{year_choice <- input$year_choice})
-    ifelse(is.null(input$host_choice), {host_choice <- c(unique(pull(datafest, "host")))},{host_choice <- input$host_choice})
-    ifelse(is.null(input$award_choice), {award_choice <- c(unique(pull(datafest, "Awards")))},{award_choice <- input$award_choice})
-    print(year_choice)
+    req(award_choice)
+    req(year_choice)
+    req(host_choice)
       filter(
         datafest_titles,
-        Awards %in% award_choice,
-        year %in% year_choice,
-        host %in% host_choice)
-    }})
+        Awards %in% input$award_choice,
+        year %in% input$year_choice,
+        host %in% input$host_choice)
+    })
 
 
   output$titles <- renderTable(
