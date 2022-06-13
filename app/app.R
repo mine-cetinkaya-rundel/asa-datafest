@@ -67,7 +67,7 @@ body <- dashboardBody(
                 fluidRow(
                   plotOutput("line", height = "200px"),
                   p("major distribution"),
-                  textOutput("major_distribution")
+                  # textOutput("major_distribution")
                   )
                 ),
 
@@ -77,12 +77,11 @@ body <- dashboardBody(
                     pickerInput("year_choice",
                                 "Year",
                                 choices = c(unique(pull(datafest, "year")), "2022"),
-                                selected = c(datafest$year),
+                                selected = unique(datafest$year),
                                 options = list(`actions-box` = TRUE),
                                 multiple = TRUE),
 
                     pickerInput("host_choice",
-                                "Host University",
                                 "Host University",
                                 choices = c(unique(pull(datafest, "host"))),
                                 selected = c(datafest$host),
@@ -275,15 +274,18 @@ server <- function(input, output, session) {
 
   })
 
-  titles_subset <- reactive({
+  titles_subset <- eventReactive(input$search, {
       req(input$year_choice)
       req(input$host_choice)
       req(input$award_choice)
-      filter(
-        datafest_titles,
-        Awards %in% input$award_choice,
-        year %in% input$year_choice,
-        host %in% input$host_choice)
+      print(input$year_choice)
+      print(input$host_choice)
+      print(input$award_choice)
+      datafest_titles %>%
+        dplyr::filter(
+          Awards %in% input$award_choice,
+          Year %in% input$year_choice,
+          Host %in% input$host_choice)
     })
 
   output$titles <- renderTable(
@@ -292,6 +294,29 @@ server <- function(input, output, session) {
     striped = TRUE,
     digits = 0
   )
+
+  # titles_subset <- reactive({
+  #   if(is.null(input$year_choice)&is.null(input$host_choice)&is.null(input$award_choice))
+  #   {return(datafest_titles)}
+  #   else{
+  #     bindEvent(input$search)
+  #     req(input$year_choice)
+  #     req(input$host_choice)
+  #     req(input$award_choice)
+  #     filter(
+  #       datafest_titles,
+  #       Awards %in% input$award_choice,
+  #       year %in% 2017,
+  #       host %in% input$host_choice)
+  #   }})
+  #
+  # output$titles <- renderTable(
+  #   {titles_subset()}, sanitize.text.function = function(x) x,
+  #   hover = TRUE,
+  #   striped = TRUE,
+  #   digits = 0
+  # )
+
   ## Adding Word Cloud
 
   output$wordcloud <- renderPlot({
