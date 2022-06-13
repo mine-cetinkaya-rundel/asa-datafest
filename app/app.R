@@ -2,10 +2,6 @@
 source("helper.R", local = TRUE)
 # -------------------------------------------------------------------
 
-# create a table with just winning titles ---------------------------
-
-
-
 datafest_titles[nrow(datafest_titles)+1,] = list("Best Insight", "Duke University", 2022, "Reordering minigames with personalized Recommendation System", '"Chill Chill"', "https://www2.stat.duke.edu/datafest/winning-projects/team-chili-chill-presentation.pdf")
 datafest_titles <- datafest_titles %>%
   mutate(
@@ -71,7 +67,7 @@ body <- dashboardBody(
                 fluidRow(
                   plotOutput("line", height = "200px"),
                   p("major distribution"),
-                  #textOutput("major_distribution")
+                  textOutput("major_distribution")
                   )
                 ),
 
@@ -81,7 +77,7 @@ body <- dashboardBody(
                     pickerInput("year_choice",
                                 "Year",
                                 choices = c(unique(pull(datafest, "year")), "2022"),
-                                selected = c(unique(pull(datafest, "year")), "2022"),
+                                selected = c(datafest$year),
                                 options = list(`actions-box` = TRUE),
                                 multiple = TRUE),
 
@@ -89,7 +85,7 @@ body <- dashboardBody(
                                 "Host University",
                                 "Host University",
                                 choices = c(unique(pull(datafest, "host"))),
-                                selected = datafest_titles$host,
+                                selected = c(datafest$host),
                                 options = list(`actions-box` = TRUE),
                                 multiple = TRUE),
 
@@ -280,10 +276,6 @@ server <- function(input, output, session) {
   })
 
   titles_subset <- reactive({
-    # if(is.null(input$year_choice)&is.null(input$host_choice)&is.null(input$award_choice))
-    # {return(datafest_titles)}
-    # else{
-    #   bindEvent(input$search)
       req(input$year_choice)
       req(input$host_choice)
       req(input$award_choice)
