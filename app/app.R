@@ -262,18 +262,19 @@ server <- function(input, output, session) {
     max_tot_part <- max(uni_max)
 
     ggplot(sel_part_count, aes(x = year, y = num_part)) +
-      geom_line(color = "blue") +
-      geom_point(size = 3) +
+      geom_line(color = "aquamarine4") +
+      #geom_point(size = 3) +
       scale_x_continuous("Year",
                          limits = c(2011, 2017),
                          breaks = c(2011:2017)) +
       scale_y_continuous("",
                          limits = c(0, max_tot_part)) +
       labs(title = "DataFest participants over time",
-           subtitle = "Total number of participants for each year")
-
+           subtitle = "Total number of participants for each year") +
+      geom_text(aes(label = num_part, x = year, y = num_part), position = position_dodge(width = 0.8), vjust = 1.5, color = "#FFB266") +
+      theme_minimal()
   })
-
+  
   titles_subset <- eventReactive(input$search, {
 
       ifelse(
