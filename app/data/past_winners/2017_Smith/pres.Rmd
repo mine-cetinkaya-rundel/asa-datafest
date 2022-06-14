@@ -1,0 +1,60 @@
+---
+title: "Untitled"
+author: "Ben Baumer"
+date: "April 2, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(googlesheets)
+library(dplyr)
+gs_ls()
+df <- gs_title("DataFest 2017 Presentations") %>%
+  gs_read()
+```
+
+```{r}
+panels <- c("A", "B", "C")
+n <- nrow(df)
+
+panel_vec <- (mosaic::do(ceiling(n / 3)) * sample(panels)) %>%
+  as.matrix() %>%
+  t() %>%
+  as.character()
+df <- df %>%
+  mutate(seed = runif(nrow(.))) %>%
+  arrange(School, seed) %>%
+  mutate(panel = head(panel_vec, n))
+```
+
+```{r}
+df <- df %>%
+  mutate(pres_file = paste0(gsub("\\.", "_", make.names(Team)), "_pres.pdf")) %>%
+  mutate(text_file = paste0(gsub("\\.", "_", make.names(Team)), "_text.pdf")) %>%
+  arrange(panel, seed)
+```
+
+```{r}
+make_docs <- function(x) {
+  panel <- unique(x$panel)[1]
+  pres_out_file <- paste0("fcdf_2017_pres_", panel, ".pdf")
+  text_out_file <- paste0("fcdf_2017_text_", panel, ".pdf")
+  pres_files <- paste(x$pres_file, collapse = " ")
+  text_files <- paste(x$text_file, collapse = " ")
+  cmd <- paste0("gs -dNOPAUSE -sDEVICE=pdfwrite -sOUTPUTFILE=", pres_out_file, " -dBATCH ", pres_files)
+  message(cmd)
+  system(cmd)
+  cmd <- paste0("gs -dNOPAUSE -sDEVICE=pdfwrite -sOUTPUTFILE=", text_out_file, " -dBATCH ", text_files)
+  message(cmd)
+  system(cmd)
+}
+
+df %>%
+  group_by(panel) %>%
+  dplyr::do(cmd = make_docs(.))
+```
+
