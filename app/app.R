@@ -5,7 +5,7 @@ source("helper.R", local = TRUE)
 datafest_titles[nrow(datafest_titles)+1,] = list("Best Insight", "Duke University", 2022, "Reordering minigames with personalized Recommendation System", '"Chill Chill"', "https://www2.stat.duke.edu/datafest/winning-projects/team-chili-chill-presentation.pdf")
 datafest_titles <- datafest_titles %>%
   mutate(
-    Presentation = paste0("<a href='", Presentation, "'>", icon("presentation-screen", verify_fa = FALSE), "</a>"
+    Presentation = paste0("<a href='", Presentation, "'>", as.character(icon("presentation-screen", verify_fa = FALSE)), "</a>"
     )
   )
 
@@ -275,17 +275,28 @@ server <- function(input, output, session) {
   })
 
   titles_subset <- eventReactive(input$search, {
-      req(input$year_choice)
-      req(input$host_choice)
-      req(input$award_choice)
-      print(input$year_choice)
-      print(input$host_choice)
-      print(input$award_choice)
-      datafest_titles %>%
-        dplyr::filter(
-          Awards %in% input$award_choice,
-          Year %in% input$year_choice,
-          Host %in% input$host_choice)
+
+      ifelse(
+        is.null(input$award_choice),
+        award <- c("Best Insight", "Best Visualization", "Best Use of External Data"),
+        award <- input$award_choice)
+      print(award)
+      ifelse(
+        is.null(input$year_choice),
+        year_title <- unique(datafest$year),
+        year_title <- input$year_choice)
+      print(year_title)
+      ifelse(
+        is.null(input$host_choice),
+        host_title <- unique(datafest$host),
+        host_title <- input$host_choice)
+      print(host_title)
+
+      filter(
+        datafest_titles,
+        Awards %in% award,
+        Year %in% year_title,
+        Host %in% host_title)
     })
 
   output$titles <- renderTable(
