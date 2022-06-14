@@ -21,12 +21,11 @@ datafest <- datafest %>%
 #write.csv(datafest, "app/data/datafest.csv")
 major_df <- read_csv(here::here("app/data/majors.csv"))
 
-
-#Map
-
 # get data for universities page
 universities_df <- datafest %>%
   select(host, year, num_part)
+
+#Map
 
 # set map bounds ----------------------------------------------------
 left <- floor(min(datafest$lon))
