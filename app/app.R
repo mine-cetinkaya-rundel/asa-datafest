@@ -76,7 +76,7 @@ body <- dashboardBody(
             font-style: italic;
             }")),
                   br(),
-                  plotOutput("line", height = "200px"),
+                  plotOutput("line", height = "400px"),
                   br(),
                   p("major distribution"),
                   # textOutput("major_distribution")
@@ -306,10 +306,18 @@ server <- function(input, output, session) {
       scale_y_continuous("",
                          limits = c(0, max_tot_part)) +
       labs(title = "DataFest participants over time",
-           subtitle = "Total number of participants for each year") +
+           caption = "Number of participants for each year") +
       geom_text(aes(label = num_part, x = year, y = num_part), position = position_dodge(width = 0.8), vjust = 1.5, color = "#FFB266") +
-      theme_minimal()
-  })
+      theme(panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.background = element_blank(),
+            plot.background = element_blank(),
+            axis.line = element_line(colour = "darkgray")) +
+      theme(plot.title = element_text(color = "aquamarine4", size = 30, hjust = 0.5),
+            plot.caption = element_text(color = "aquamarine4", size = 20, face = "italic"),
+            axis.text.x = element_text(size = 10),
+            axis.text.y = element_text(size = 10))
+  }, bg="transparent")
 
   titles_subset <- eventReactive(input$search, {
 
