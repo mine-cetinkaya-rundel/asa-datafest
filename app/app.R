@@ -65,7 +65,14 @@ body <- dashboardBody(
                       )
                   ),
                 fluidRow(
+                  textOutput("text"),
+                  tags$head(tags$style("#text{color: #9999CC;
+                                 font-size: 20px;
+            font-style: bold;
+            }")),
+                  br(),
                   plotOutput("line", height = "200px"),
+                  br(),
                   p("major distribution"),
                   # textOutput("major_distribution")
                   )
@@ -113,6 +120,15 @@ ui <- dashboardPage(
 
 # Preview the UI in the console
 server <- function(input, output, session) {
+
+  output$text <- renderText({
+    location = datafest %>%
+      filter(host == input$college) %>%
+      select(city,state)
+    city = location[[1]][1]
+    state = location[[2]][1]
+    paste(city, ",", state)
+  })
 
   # Create tab items in sidebar
   output$home <- renderMenu({
@@ -274,7 +290,7 @@ server <- function(input, output, session) {
       geom_text(aes(label = num_part, x = year, y = num_part), position = position_dodge(width = 0.8), vjust = 1.5, color = "#FFB266") +
       theme_minimal()
   })
-  
+
   titles_subset <- eventReactive(input$search, {
 
       ifelse(
