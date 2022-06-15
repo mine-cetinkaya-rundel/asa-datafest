@@ -117,7 +117,7 @@ source_data <- c("LAPD","Kiva.com","eHarmony","GridPoint","Edmunds.com","Ticketm
                  #"Indeed","Candadian National Women's Rugby Team","Covid-19 (Virtual Data Challenge)","Rocky Mountain Posion and Drug Safety","Play2Prevent Lab")
 datasource <- data.frame(year, source_data)
 
-## Subset dataframe to Year Country, State, City, Majors, Participating institutions
-country_hosts_df <- subset(datafest,
-                           df =="Yes",
-                           select= c("year","host","country","state","city","other_inst"))
+# ## Subset dataframe to Year Country, State, City, Majors, Participating institutions
+# country_hosts_df <- subset(datafest,
+#                            df =="Yes",
+#                            select= c("year","host","country","state","city","other_inst"))

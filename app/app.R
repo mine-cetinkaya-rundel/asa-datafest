@@ -66,9 +66,17 @@ body <- dashboardBody(
                                   sep = "")
                       )
                   ),
-                fluidRow(
-                  textOutput("text"),
+                fluidRow(box(
+                  plotOutput("line", height = "350px"),width = 9),
+                  box(
+                  textOutput("country"),
+                  textOutput("state"),
                   tags$head(tags$style("#text{color: #9999CC;
+                                 font-size: 25px;
+            font-style: bold;
+            }")),
+                  textOutput("city"),
+                  tags$head(tags$style("#city{color: #9999CC;
                                  font-size: 25px;
             font-style: bold;
             }")),
@@ -77,8 +85,8 @@ body <- dashboardBody(
                                  font-size: 20px;
             font-style: italic;
             }")),
-                  br(),
-                  plotOutput("line", height = "350px"),
+                  textOutput("other_inst"),
+                  textOutput("start_year"),width = 3),
                   br(),
                   p("major distribution"),
                   # textOutput("major_distribution")
@@ -97,8 +105,8 @@ body <- dashboardBody(
 
                     pickerInput("host_choice",
                                 "Host University",
-                                choices = c(unique(pull(datafest, "host"))),
-                                selected = c(datafest$host),
+                                choices = c(sort(unique(pull(datafest, "host")))),
+                                selected = c(sort(unique(datafest$host)))[19],
                                 options = list(`actions-box` = TRUE),
                                 multiple = TRUE),
 
@@ -127,14 +135,37 @@ ui <- dashboardPage(
 
 # Preview the UI in the console
 server <- function(input, output, session) {
-
-  output$text <- renderText({
+  
+  output$start_year <- renderText({
+    year_start = datafest %>%
+      filter(host == input$college & df == "Yes") %>%
+      select(year)
+    min_year = min(year_start[[1]])
+    paste(input$college, "first participated in Datafest in the year ",min_year)
+  })
+  
+  output$country <- renderText({
     location = datafest %>%
       filter(host == input$college) %>%
-      select(city,state)
+      select(country)
+    country = location[[1]][1]
+    paste("Country: ",country)
+  })
+
+  output$state <- renderText({
+    location = datafest %>%
+      filter(host == input$college) %>%
+      select(state)
+    state = location[[1]][1]
+    paste("State:", state)
+  })
+  
+  output$city <- renderText({
+    location = datafest %>%
+      filter(host == input$college) %>%
+      select(city)
     city = location[[1]][1]
-    state = location[[2]][1]
-    paste(city, ",", state)
+    paste("City:", city)
   })
 
   output$percent <- renderText({
@@ -300,7 +331,7 @@ server <- function(input, output, session) {
     max_tot_part <- max(uni_max)
 
     ggplot(sel_part_count, aes(x = year, y = num_part)) +
-      geom_line(color = "aquamarine4") +
+      geom_line(color = "#005e97", size=1.25) +
       #geom_point(size = 3) +
       scale_x_continuous("Year",
                          limits = c(2011, 2017),
@@ -308,17 +339,18 @@ server <- function(input, output, session) {
       scale_y_continuous("",
                          limits = c(0, max_tot_part)) +
       labs(title = "DataFest participants over time",
-           caption = "Number of participants for each year") +
-      geom_text(aes(label = num_part, x = year, y = num_part), position = position_dodge(width = 0.8), vjust = 1.5, color = "#FFB266") +
+           subtitle = "Number of participants for each year") +
+      geom_text(aes(label = num_part, x = year, y = num_part), position = position_dodge(width = 0.8), vjust = 1.5, color = "#ff9700", size = 5) +
       theme(panel.grid.major = element_blank(),
-            panel.grid.minor = element_blank(),
-            panel.background = element_blank(),
-            plot.background = element_blank(),
+            panel.grid.minor = element_line(color="gray"),
+            panel.background = element_rect(fill="white"),
+            plot.background = element_rect(fill="white"),
             axis.line = element_line(colour = "darkgray")) +
-      theme(plot.title = element_text(color = "aquamarine4", size = 30, hjust = 0.5),
-            plot.caption = element_text(color = "aquamarine4", size = 20, face = "italic"),
-            axis.text.x = element_text(size = 10),
-            axis.text.y = element_text(size = 10))
+      theme(plot.title = element_text(color = "#005e97", size = 20),
+            plot.subtitle = element_text(size = 15),
+            #plot.caption = element_text(color = "aquamarine4", size = 20, face = "italic"),
+            axis.text.x = element_text(size = 12),
+            axis.text.y = element_text(size = 12))
   }, bg="transparent")
 
   titles_subset <- eventReactive(input$search, {
