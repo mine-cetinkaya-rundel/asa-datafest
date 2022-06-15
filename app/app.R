@@ -56,7 +56,9 @@ body <- dashboardBody(
         tabItem(tabName = "host",
                 fluidRow(
                   box(width = 3,
-                      selectInput("college", "College", choices = unique(pull(datafest, "host")))),
+                      selectInput("college", "College",
+                                  choices = sort(unique(pull(datafest, "host"))),
+                                  selected=sort(unique(pull(datafest, "host")))[19])),
                   box(width = 9,
                       sliderInput("uni_year", "Year", value = 2017,
                                   min = 2011, max = 2017, step = 1,
@@ -67,16 +69,16 @@ body <- dashboardBody(
                 fluidRow(
                   textOutput("text"),
                   tags$head(tags$style("#text{color: #9999CC;
-                                 font-size: 60px;
+                                 font-size: 25px;
             font-style: bold;
             }")),
                   textOutput("percent"),
                   tags$head(tags$style("#percent{color: #A9CEEF;
-                                 font-size: 40px;
+                                 font-size: 20px;
             font-style: italic;
             }")),
                   br(),
-                  plotOutput("line", height = "400px"),
+                  plotOutput("line", height = "350px"),
                   br(),
                   p("major distribution"),
                   # textOutput("major_distribution")
