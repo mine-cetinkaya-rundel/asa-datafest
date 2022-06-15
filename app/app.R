@@ -67,8 +67,13 @@ body <- dashboardBody(
                 fluidRow(
                   textOutput("text"),
                   tags$head(tags$style("#text{color: #9999CC;
-                                 font-size: 20px;
+                                 font-size: 60px;
             font-style: bold;
+            }")),
+                  textOutput("percent"),
+                  tags$head(tags$style("#percent{color: #A9CEEF;
+                                 font-size: 40px;
+            font-style: italic;
             }")),
                   br(),
                   plotOutput("line", height = "200px"),
@@ -128,6 +133,21 @@ server <- function(input, output, session) {
     city = location[[1]][1]
     state = location[[2]][1]
     paste(city, ",", state)
+  })
+
+  output$percent <- renderText({
+    part = datafest %>%
+      filter(year == input$uni_year) %>%
+      select(num_part) %>%
+      drop_na()
+    totpart = sum(part$num_part)
+    host =  datafest %>%
+      filter(host == input$college, year == input$uni_year) %>%
+      select(num_part) %>%
+      drop_na()
+    uni = host$num_part
+    percent = percent(uni/totpart, accuracy = 0.01)
+    paste("Proportion of total participants in ", input$uni_year, ": ", percent)
   })
 
   # Create tab items in sidebar

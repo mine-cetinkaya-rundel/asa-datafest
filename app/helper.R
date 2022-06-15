@@ -9,6 +9,7 @@ library(usethis)
 library(wordcloud)
 library(shinyWidgets)
 library(shinydashboard)
+library(scales)
 
 
 # load data ---------------------------------------------------------
@@ -16,8 +17,6 @@ library(shinydashboard)
 datafest <- read_csv(here::here("app/data/datafest.csv"))
 datafest_titles <- read_csv(here::here("app/data/titles.csv"))
 major_df <- read_csv(here::here("app/data/majors.csv"))
-
-
 
 # get data for universities page
 universities_df <- datafest %>%
