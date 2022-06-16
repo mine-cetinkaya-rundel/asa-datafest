@@ -64,31 +64,54 @@ body <- dashboardBody(
                                   min = 2011, max = 2017, step = 1,
                                   animate = animationOptions(interval = 1500),
                                   sep = "")
-                      )
+                      ),
+                  textOutput("start_year"),
+                  tags$head(tags$style("#start_year{color: #000000;
+                                 font-size: 20px;
+            font-style: bold; text-align: left;
+            }")),
+                  br(),
                   ),
                 fluidRow(box(
-                  plotOutput("line", height = "350px"),width = 9),
-                  box(
+                  plotOutput("line", height = "400px"),width = 9),
+                  box(solidHeader = TRUE,
+                      title = p("Particulars",
+                                style = "font-size:22px;
+                                margin-bottom: 0.2em;
+                                color: #005e97"),
+                    hr(style = "margin-top: 0.1em; border-top: 1px solid"),
                   textOutput("country"),
-                  textOutput("state"),
-                  tags$head(tags$style("#text{color: #9999CC;
-                                 font-size: 25px;
-            font-style: bold;
+                  tags$head(tags$style("#country{color: #001833;
+                                 font-size: 18px;
+            font-family:'Trebuchet MS', sans-serif; font-style: bold;
             }")),
-                  textOutput("city"),
-                  tags$head(tags$style("#city{color: #9999CC;
-                                 font-size: 25px;
-            font-style: bold;
-            }")),
-                  textOutput("percent"),
-                  tags$head(tags$style("#percent{color: #A9CEEF;
-                                 font-size: 20px;
-            font-style: italic;
-            }")),
-                  textOutput("other_inst"),
-                  textOutput("start_year"),width = 3),
                   br(),
-                  p("major distribution"),
+                  textOutput("state"),
+                  tags$head(tags$style("#state{color: #001833;
+                                 font-size: 18px;
+            font-family:'Trebuchet MS', sans-serif;font-style: bold;
+            }")),
+                  br(),
+                  textOutput("city"),
+                  tags$head(tags$style("#city{color: #001833;
+                                 font-size: 18px;
+            font-family:'Trebuchet MS', sans-serif;font-style: bold;
+            }")),
+                  br(),
+                  textOutput("other_inst"),
+                  tags$head(tags$style("#other_inst{color: #001833;
+                                 font-size: 18px;
+            font-family:'Trebuchet MS', sans-serif;font-style: bold;
+            }")),
+                  br(),
+                  textOutput("percent"),
+                  tags$head(tags$style("#percent{color: #001833;
+                                 font-size: 18px;
+            font-family:'Trebuchet MS', sans-serif;font-style: bold;
+            }")),
+                  width = 3, height = "420px"),
+                  br(),
+                  #p("major distribution"),
                   # textOutput("major_distribution")
                   )
                 ),
@@ -145,26 +168,26 @@ server <- function(input, output, session) {
   })
   
   output$country <- renderText({
-    location = datafest %>%
+    loc_country = datafest %>%
       filter(host == input$college) %>%
       select(country)
-    country = location[[1]][1]
+    country = loc_country[[1]][1]
     paste("Country: ",country)
   })
 
   output$state <- renderText({
-    location = datafest %>%
+    loc_state = datafest %>%
       filter(host == input$college) %>%
       select(state)
-    state = location[[1]][1]
+    state = loc_state[[1]][1]
     paste("State:", state)
   })
   
   output$city <- renderText({
-    location = datafest %>%
+    loc_city = datafest %>%
       filter(host == input$college) %>%
       select(city)
-    city = location[[1]][1]
+    city = loc_city[[1]][1]
     paste("City:", city)
   })
 
@@ -181,6 +204,14 @@ server <- function(input, output, session) {
     uni = host$num_part
     percent = percent(uni/totpart, accuracy = 0.01)
     paste("Proportion of total participants in ", input$uni_year, ": ", percent)
+  })
+  
+  output$other_inst <- renderText({
+    inst = datafest %>%
+      filter(host == input$college & df == "Yes" & year == input$uni_year) %>%
+      select(other_inst)
+    coll = inst[[1]][1]
+    paste("Participating Institutions: ", coll)
   })
 
   # Create tab items in sidebar
@@ -332,7 +363,7 @@ server <- function(input, output, session) {
 
     ggplot(sel_part_count, aes(x = year, y = num_part)) +
       geom_line(color = "#005e97", size=1.25) +
-      #geom_point(size = 3) +
+      geom_point(color = "#005e97",size = 1.5) +
       scale_x_continuous("Year",
                          limits = c(2011, 2017),
                          breaks = c(2011:2017)) +
@@ -341,9 +372,9 @@ server <- function(input, output, session) {
       labs(title = "DataFest participants over time",
            subtitle = "Number of participants for each year") +
       geom_text(aes(label = num_part, x = year, y = num_part), position = position_dodge(width = 0.8), vjust = 1.5, color = "#ff9700", size = 5) +
-      theme(panel.grid.major = element_blank(),
-            panel.grid.minor = element_line(color="gray"),
-            panel.background = element_rect(fill="white"),
+      theme(panel.grid.major = element_line(color="lightgray"),
+            panel.grid.minor = element_line(color="lightgray"),
+            panel.background = element_rect(fill="#EBEBEB"),
             plot.background = element_rect(fill="white"),
             axis.line = element_line(colour = "darkgray")) +
       theme(plot.title = element_text(color = "#005e97", size = 20),
