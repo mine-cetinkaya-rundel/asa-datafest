@@ -1,0 +1,266 @@
+---
+title: "Frequentist Logistic Regression"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+options(digits = 3)
+```
+
+```{r}
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(loo)
+library(jtools)
+library(countrycode)
+library(rstanarm)
+library(bayesplot)
+library(pROC)
+```
+
+```{r}
+loans <- read.csv("data/loans.csv")
+```
+
+```{r eval=FALSE, echo=FALSE}
+#save(post1, file = "data/post1.Rdata" )
+#save(post0, file = "data/post0.Rdata" )
+load("data/post1.Rdata")
+load("data/post0.Rdata")
+```
+
+```{r eval=FALSE, echo=FALSE}
+percent <- loans %>% 
+  drop_na(sector) %>% # drop missing values by health variable
+  group_by(sector) %>%  # specify categorical variable
+  summarize(Frequency = n()) %>% # return counts / frequencies
+  mutate(Percent = paste0(round(Frequency / nrow(loans) * 100, 2), "%"))
+
+table <- kbl(percent, 
+    caption = "Table 2: Frequency table for loan sectors") %>%
+    kable_styling(bootstrap_options = "striped", full_width = FALSE, position = "left")
+table
+colourCount = length(unique(loans$sector))
+getPalette = colorRampPalette(brewer.pal(12, "Set3"))
+bar <- ggplot(data = percent, aes(x = reorder(sector, Frequency), y = Frequency)) +
+  geom_col(aes(fill = getPalette(colourCount)) , show.legend = FALSE) +
+  ggtitle(paste("Loan Sector Distribution")) +
+  coord_flip() 
+bar
+```
+
+```{r eval=FALSE, echo=FALSE}
+status <- loans %>% 
+  drop_na(status) %>% # drop missing values by health variable
+  group_by(status) %>%  # specify categorical variable
+  summarize(Frequency = n()) %>% # return counts / frequencies
+  mutate(Percent = paste0(round(Frequency / nrow(loans) * 100, 2), "%"))
+
+table1 <- tibble(status) %>% 
+  arrange(desc(Percent))
+table1
+donut1 <- ggplot(status, aes(x = 2, y = Frequency, fill = status)) +
+    geom_bar(stat = "identity") +
+    coord_polar(theta = "y", start = 0) + 
+    theme_void() + # these theme removes the lines around chart and grey background
+    theme(legend.title = element_text(size = 12),
+          legend.text = element_text(size = 12)) +
+    scale_fill_brewer(palette="Accent") +
+    labs(fill = "Status Distribution") +
+    xlim(0.5, 2.5)
+donut1
+bar1 <- ggplot(loans, aes(x = status)) +
+  geom_bar() +
+  coord_flip()
+bar1
+```
+
+```{r}
+loan <- loans %>% 
+  mutate(paid_amount = if_else(is.na(paid_amount), 0, paid_amount),
+         continent = countrycode(sourcevar = location.country,
+                            origin = "country.name",
+                            destination = "continent"))
+```
+
+```{r eval=FALSE, echo=FALSE}
+ggplot(data = loan, aes(x = funded_amount)) +
+  geom_histogram(binwidth=100) +
+  labs(title="Distribution of Funded Amount")
+
+ggplot(data = loan, aes(x = paid_amount)) +
+  geom_histogram(binwidth=100) +
+  labs(title="Distribution of Paid Amount")
+
+ggplot(loan, aes(x = posted_yr)) +
+  geom_histogram()
+```
+
+```{r eval=FALSE, echo=FALSE}
+loan %>%
+  count(status, sector) %>%       
+  group_by(status) %>%
+  mutate(pct= prop.table(n) * 100) %>%
+  ggplot() + aes(status, pct, fill=sector) +
+  geom_bar(stat="identity") +
+  labs(x = "Status", y = "Proportion") +
+  coord_flip() 
+```
+
+```{r eval=FALSE, echo=FALSE}
+#continent
+ggplot(data=d, aes(x = fct_infreq(continent),  fill=continent)) +
+  geom_bar(stat = 'count') +
+  scale_fill_brewer(palette = "Accent") +
+  labs(x = "Continent")
+
+ggplot(data=d, aes(x = status)) +
+  geom_bar(aes(fill=as.factor(continent)), position="fill") +
+  scale_fill_brewer(palette = "Accent")
+
+#sector
+ggplot(data=d, aes(x = status)) +
+  geom_bar(aes(fill=as.factor(sector)), position="fill") 
+
+#loan_amount
+ggplot(d, aes(x = loan_amount, group = status)) +
+  geom_boxplot()
+  #geom_boxplot(outlier.colour="red", outlier.shape=8, outlier.size=4)
+
+
+```
+
+# Logistic Regression
+
+The response variable that we would like to look at is the loan status. As shown in the EDA section, it has 8 levels. Intuitively an appropriate model for such a response variable with be a multinomial logistic regression, but that would be hard to interpret. Thus, we are only looking at the completed loans, which are either repaid or not repaid. We filtered the data set for observations whose status is "paid" or "defaulted". With a binary response variable, we could then fit a logistic regression on the data. To start with, we mutated the `status` variable to be 1 if it was "paid" and 0 if it was "defaulted", such that the baseline level would be "defaulted".
+
+```{r}
+d <- loan %>% 
+  filter(status == "paid"|status == "defaulted")
+d <- d %>% 
+  mutate(status = if_else(status == "paid", 1, 0))
+```
+
+The logistic regression model is an example of a broad class of models known as generalized linear models (GLM), in which a linear relationship between the response and predictors is built even though their underlying relationship is not linear. Since we have a single-observation binary response variable, we are using a Bernoulli GLM. A Bernoulli distributions the discrete probability distribution of a random variable which takes the value 1 with probability $p$ and the value 0 with probability $q=1-p$.The likelihood for one observation $y$ can be written as a Bernoulli PMF over possible outcomes $k$: $$\begin{equation}
+    f(k;p) =
+    \left\{
+        \begin{array}{cc}
+                p & \mathrm{if\ } k=1 \\
+                1-p & \mathrm{if\ } k=0 \\
+        \end{array} 
+    \right.
+\end{equation},$$
+
+The two most common link functions used for binomial GLMs are the logit and probit functions, but for binary outcomes a common choice is the *logit link.* The logit link convert probabilities to log odds, and therefore the model coefficients can be easily interpreted in terms of odds ratios. When the logit link function is used the model is often referred to as a logistic regression model (the inverse logit function is the CDF of the standard logistic distribution).
+
+## Frequentist Approach
+
+First, we fitted a general logistic regression model with frequentist approach. Basically, frequentist probability or frequentism is an interpretation of probability; it defines an event's probability as the limit of its relative frequency in many trials (the long-run probability). Probabilities can be found (in principle) by a repeatable objective process (and are thus ideally devoid of opinion). The response variable we were using is `status,` since we wanted to explore which factors are affecting the loan repayment. For the predictors, we are interested in the following variables:
+
+-   `loan_amount`, because we think that the smaller loans tend to be more easily paid back then the larger ones;
+
+-   `sector`, `posted_yr`, `continent,`as our EDA shows the status distribution of loan differs across sectors, the year when the loan is posted on Kiva, and the continent where the borrower is located;
+
+-   `time`, which is a variable we created representing the time from when the loan is posted to when the loan is funded, in months, since sometimes the time it take for the borrowers to receive the loan may affect their financial situation and thus affect their ability to repay the loan according to **t**he terms agreed.
+
+-   `dif`, which is a variable we created to calculate the difference between the loan amount and funded amount, because whether the borrowers get the full amount of loan they requested may affect their financial ability to pay back the loan.
+
+-   `sex`, which indicates the sex of a borrower group, where "mixed" means in a borrower group there are both males and females.
+
+```{r}
+d <- d %>% 
+  select(loan_id, loan_amount, status, funded_amount, posted_yr, posted_mo, posted_day, funded_yr, funded_mo, funded_day, sector, continent, borrower_m_count, borrower_f_count) %>% 
+  mutate(dif = loan_amount-funded_amount,
+         time = (funded_yr - posted_yr)*365+(funded_mo - posted_mo)*30 + (funded_day - posted_day),
+         sex = case_when(borrower_m_count == 0 ~ "female",
+                         borrower_f_count == 0 ~ "male",
+                         TRUE ~ "mixed"))
+```
+
+```{r}
+unique(d$dif)
+```
+
+However, a closer look at the variable `dif` showed that after we filtered the original data set to contain only completed loans, all the observations has funded amount equal to the loan amount. Thus, the variable `dif` would not make any difference on the response variable, so we were excluding it from our model.
+
+Next, we split our data into training set and test set and fitted a frequentist logistic model on the training set:
+
+```{r}
+seed <- 2
+train1 <- sample(d$loan_id, 30000)
+training <- d %>% 
+  filter(loan_id %in% train1)
+testing <-d %>% 
+  filter(!loan_id %in% train1)
+model <- glm(status ~ loan_amount + sector + posted_yr + continent + time + sex, data = training, family = "binomial"(link = "logit")) 
+```
+
+```{r eval=FALSE, echo=FALSE}
+modell <- glm(status ~ loan_amount + sector + as.factor(posted_yr) + continent + time + sex, data = training, family = "binomial"(link = "logit"))
+```
+
+```{r eval=FALSE, echo=FALSE}
+summ(model)
+```
+
+```{r eval=FALSE, echo=FALSE}
+summ(modell)
+```
+
+To identify variables that are important in explaining variation in the response, we did model selection using the `step()` function. Specifying "direction="both"" tells R to perform both forward and backward selections. The default selection criterion is $\mathrm{AIC}$: from the current model, it drops or adds the one variable that leads to the best $\mathrm{AIC}$ improvement (smallest $\mathrm{AIC}$).
+
+```{r}
+step(model, direction="both",trace=FALSE)
+```
+
+The variables selected here are all except `time`. We dropped the `time` variable from our model. The final model is then:
+
+```{r}
+final <- glm(status ~ loan_amount + sector + posted_yr + continent + sex, data = training, family = "binomial"(link = "logit")) 
+```
+
+We can see a formatted model output using the `summ()` function:
+
+```{r}
+summ(final)
+```
+
+From the p-values of model coefficients, the significant predictors are `loan_amount`, `sector`, `posted_yr`, and `continent`, which have p-values less than 0.05. `sex` can also be considered significant if we choose the significance level $\alpha=0.1$ . Here we can notice that the coefficient of `loan_amount` is about 0, meaning that the odds of loan repayment is expected to be almost the same across all values of loan amount, which indicates the loan amount has little effect on whether the loan is paid back or not. Also, the p-value is extremely close to 0, indicating a strong statistical significance of this predictor. Another finding was that the loans in the "Education" sector is the most likely to be repaid, while loans in the "Personal Use" sector is the least likely to be repaid. In terms of the continent where the loan transaction took place, Oceania has the highest odd ratio for the loan being repaid while Africa has the lowest odd ratio. A borrower group that consists of both males and females has the highest odd ratio of repaying the loan, and a female borrower or a female-only borrower group generally has higher odd ratio of repaying the loan than a male borrower or a male-only borrower group.
+
+An example of interpretation of the coefficients is: "0.42" for `posted_yr` means that for a given year when the loan is posted, the expected odds of the loan getting repaid is $e^{0.42}\approx1.52$ times the odds of the loan getting repaid if the loan is posted the previous year.
+
+To evaluate our model, we're using the ROC (*Receiver Operating Characteristic*) curves to evaluate different thresholds for a classification problem. In a nutshell, ROC curve visualizes a confusion matrix for every threshold. ROC curve shows a *False positive rate* on the X-axis. This metric informs us about the proportion of negative class classified as positive. We used `ggroc()` from the `PROC` package to plot the ROC curve.
+
+```{r}
+predicted1 <- predict(final, newdata = testing)
+roc1 = roc(response = testing$status, predictor = predicted1)
+ggroc(roc1, legacy.axes = TRUE) +
+  labs(x = 'False-positive rate', y = 'True-positive rate', title = 'Simulated ROC curve')
+```
+
+```{r eval=FALSE, echo=FALSE}
+predicted11 <- predict(modell, newdata = testing)
+roc11 = roc(response = testing$status, predictor = predicted11)
+ggroc(roc11, legacy.axes = TRUE) +
+  labs(x = 'False-positive rate', y = 'True-positive rate', title = 'Simulated ROC curve')
+```
+
+On the Y-axis, it shows a *True positive rate.* This metric is sometimes called *Recall* or *Sensitivity*. It shows the positive class proportion that was correctly classified.
+
+AUC represents the area under the ROC curve. AUC ranges in value from 0 to 1. A model whose predictions are 100% wrong has an AUC of 0; one whose predictions are 100% correct has an AUC of 1. Ideally, the ROC curve should extend to the top left corner. The AUC score would be 1 in that scenario. We used the `auc()` function from the `pROC` package to calculate the AUC of the model.
+
+```{r}
+auc(testing$status,predicted1)
+```
+
+```{r eval=FALSE, echo=FALSE}
+auc(testing$status,predicted11)
+```
+
+Here we got an AUC score of 0.7158, which means there is about 70% chance that our model will be able to distinguish between positive class (paid) and negative class (defaulted). In general, an AUC of 0.5 suggests no discrimination, 0.7 to 0.8 is considered acceptable, 0.8 to 0.9 is considered excellent, and more than 0.9 is considered outstanding.
