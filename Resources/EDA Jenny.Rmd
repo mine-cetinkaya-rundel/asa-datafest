@@ -1,0 +1,319 @@
+---
+title: "Exploratory Data Analysis"
+date: "07/10/2022"
+author: "Jenny Yang"
+output: 
+  html_document:
+  toc: true
+  toc_float: true
+---
+
+## Getting started
+
+EDA stands for Exploratory Data Analysis. The purpose of EDA is to perform initial investigation on the data, look for interesting trends, characteristics, and anomalies, usually through statistical graphics, and lay the foundation for more in-depth modelling and statistical tests, which will be covered in the **Regression Analysis** section.
+
+### Loading packages
+
+Now your R environment is all set up! With the prompt in mind, let's take a look at the data at hand, getting a sense of the distribution and potential relationships between variables. We call this step Exploratory Data Analysis, or EDA. First, let's load some useful packages. In this tutorial, we will mainly explore and visualize the data using the `tidyverse` package, which includes `ggplot2` that we will be using mainly for graphing.
+
+```{r load-packages, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(janitor)
+library(countrycode)
+library(colorblindr)
+library(viridis)
+```
+
+### Overview of the Data
+
+Recall that our prompt is 
+**Help understand what motivates people to lend money to developing-nation entrepreneurs and what factors are associated with paying these loans.** 
+From the file names, `lender_loans.csv`, `lenders.csv`, and `loans.csv` seem to be three most relevant files to start with. We can take a quick peek at the data before diving deep.
+
+```{r read data, message = FALSE, results = FALSE, warning = FALSE}
+lender_loans <- read_csv("data/lender_loans.csv")
+lenders <- read_csv("data/lenders.csv")
+loans <- read_csv("data/loans.csv")
+str(lender_loans)
+str(lenders)
+str(loans)
+```
+
+Using the `str` function, we can see that in `lender_loans`, we have 125,580 observations of 51 variables; in `lenders`, we have 15,000 observations of 18 variables; and in `loans`, we have 97,183 observations of 75 variables. We can also see the variable names, from which we can narrow down our scope to the variables that are relevant to the prompt for further exploration and analysis. 
+
+There are two parts of the prompt that we need to address, **motivation for lending** and **factors associated with repayment**. 
+
+To investigate lenders' motivations, we can focus on `lender_loans` and `lenders`. Possible helpful variables that associate with each lender can include `whereabouts` (introductory description about lenders), `country_code`(lenders' country), `occupation` (lenders' occupation), as well as the time that each lender has been a member of Kiva (variables start with `member_since`). `loan_because` will also be revealing since the lenders are directly stating their reasons for lending. Yet, it is a non-numerical data. So, it requires different analytical approaches that will be covered later in the **Text Analysis** section.
+
+Similarly, variables that will contribute to the repayment can include `loan_amount`, `sector`, `use`, `location.code` (borrowers' country). A larger `loan_amount` may be a larger investment that is more risky. Certain `sector`s can be more profitable than others, similar with `use`. The macroeconomic environment of a location can be exceptionally critical to the success of borrowers.
+
+There are also some variables that may be relevant to both parts of the prompt, such as the time when the loan request was posted and the loan amount. For instance, in 2008, the world economy underwent a global financial crisis. This may increase the number and amount of loans, yet lenders may feel tight and unwilling to offer help during the hard time. The ripple effect afterwards may also influence the borrowers' ability to repay the loan. Likewise, a smaller amount of loan could be more likely to receive help and more easily repaid. Yet, these are all inferences we may make that need to be backed up by subsequent data analysis.
+
+## EDA
+
+Now we can step into the real data analysis part. We can look at the general distribution of some crucial variables first.
+
+### -- Loan amount --
+
+Let's start simple. To get a general sense of the loan amount, we can plot a barchart with the `loan_amount` on the x-axis and the count on the y-axis. Barchart is one of the most basic and direct visualization graphs. We can also color the bars to see the proportion of loans in different statuses to add another layer of information.
+
+```{r loan_amount dist, message = FALSE, warning = FALSE}
+ggplot(lender_loans, aes(x = loan_amount, fill = status, width = 0.1)) +
+  geom_bar(stat = "bin", color = "black") +
+  xlab("Loan amount") +
+  ylab("Frequency") +
+  scale_fill_OkabeIto()+
+  ggtitle("Distribution of loan amount and the status of each loan amount")
+```
+From the graph above we can see that the loan amount has a unimodal, skewed right distribution. The majority of loans is concentrated below $1000, while there are some large loans scattered on the right side of the graph. Through the color we can also tell that most loans are already paid, while a good proportion is still in repayment.
+
+A summary table may be more direct to visualize the proportion of each status:
+
+```{r table}
+status <- loans %>%
+  drop_na(status) %>% # drop missing values by health variable
+  group_by(status) %>% # specify categorical variable
+  summarize(Frequency = n()) %>% # return counts / frequencies
+  mutate(Percent = paste0(round(Frequency / nrow(loans) * 100, 2), "%"))
+table1 <- status %>%
+  arrange(desc(Percent))
+knitr::kable(table1, "pipe")
+```
+
+### -- Loan amount and number of loans across year --
+
+We can also put things on a time scale and observe the trend of loan amount and the number of loans over the years. From the barchart below, we can see that both the total loan amount and the number of loans issued each year continued to grow until 2012. The highest loan amount borrowed was in the year 2011 at USD 40.2 million. Similarly, the highest of number of loans were taken  in the year 2011 as well, at 30,738 loans. Yet, there was a sharp plummet in 2012. This is because this dataset was obtained in the middle of the year, and the date is up to April 2012. This can be proven by the published Kiva financial accounts online, which states clearly that Kiva's fiscal year ends on December 31th each year. The data itself also contains clues. For all years under `posted_yr`, the corresponding `posted_month` goes from 1 to 12, except for 2012, where `posted_month` stops at 4. This means that the data include loans from January to December from 2005 to 2011, but for 2012, there's only data from January up to April. As a result, the data in 2012 may not reflect the whole year's performance.
+
+```{r across year,out.width = "40%",header= FALSE, message = FALSE, warning = FALSE}
+
+# Summarise loan amount by year
+year_loan_amount <- loans %>%
+  group_by(posted_yr) %>%
+  summarise(Total_amount = sum(loan_amount) / 1000) %>%
+  mutate(year = factor(posted_yr, posted_yr))
+
+# Summarise loan count by year
+year_loan_count <- loans %>%
+  group_by(posted_yr) %>%
+  summarise(counts = length(unique(loan_id))) %>%
+  mutate(year = factor(posted_yr, posted_yr))
+
+# Clean data
+year_loan_amount <- na.omit(year_loan_amount)
+year_loan_count <- na.omit(year_loan_count)
+
+par(mfrow = c(1, 1))
+
+# Plot loan amount by year
+ggplot(year_loan_amount) +
+  aes(x = year, y = Total_amount, fill = year, label = Total_amount) +
+  geom_bar(stat = "identity") +
+  geom_text(size = 3, nudge_y = 1000) +
+  theme(legend.position = "none") +
+  xlab("Year") +
+  ylab("Total loan amount in USD ('000)") +
+  scale_fill_OkabeIto()+
+  ggtitle("Distribution of Loan amount over the years")
+
+# Plot loan count by year
+ggplot(year_loan_count) +
+  aes(x = year, y = counts, fill = year, label = counts) +
+  geom_bar(stat = "identity") +
+  geom_text(size = 3, nudge_y = 1000) +
+  theme(legend.position = "none") +
+  xlab("Year") +
+  ylab("Total number of loans") +
+  scale_fill_OkabeIto()+
+  ggtitle("Distribution of number of loans over the years")
+```
+
+### -- Loan amount and number of loans across country --
+
+Geographical information may tell us about which country has benefitted the most from Kiva. Since there are too many countries participating in both lending and borrowing through Kiva, we picked top 10 country with the most transaction based on data in 2011, because 2011 has the most abundant data.
+
+*Borrowers Distribution*
+
+```{r loan distribution across borrower country, out.width = "40%", message = FALSE, warning = FALSE}
+# Number of Loans
+loans_country <- loans %>%
+  group_by(location.country) %>%
+  summarize(counts = length(unique(loan_id))) %>%
+  arrange(desc(counts)) %>%
+  mutate(country = factor(location.country, location.country))
+top_10_num_loan <- head(loans_country, 10)
+
+# Loan Amount
+tot_loans_country <- loans %>%
+  group_by(location.country) %>%
+  summarize(tot_loans = sum(loan_amount) / 1000) %>%
+  arrange(desc(tot_loans)) %>%
+  mutate(country = factor(location.country, location.country))
+
+top_10_tot_loan <- head(tot_loans_country, 10)
+
+par(mfrow = c(1, 1))
+
+# Bar Chart country vs No. of loans
+
+ggplot(top_10_num_loan) +
+  geom_bar(aes(country, counts, fill = country), stat = "identity") +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  xlab("Country") +
+  ylab("Total loan count") +
+  scale_fill_viridis(
+  discrete = TRUE,
+  option = "D")+
+  ggtitle("Top 10 borrower countries by number of loans")
+
+# Bar Chart country was Loan Amount
+ggplot(top_10_tot_loan) +
+  geom_bar(aes(country, tot_loans, fill = country), stat = "identity") +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  xlab("Country") +
+  ylab("Total loan amount in USD ('000)") +
+  scale_fill_viridis(
+  discrete = TRUE,
+  option = "D")+
+  ggtitle("Top 10 borrower countries by total loan amount")
+```
+
+From the two graphs, we know that Peru had received both the highest number of loans, around 9500, and the largest amount of loan, about $900,000 USD, between 2005 and 2012.
+
+*Lenders Trend*
+
+```{r Lenders Trend, message = FALSE, warning = FALSE, header = FALSE}
+
+country <- aggregate(lender_loans$loan_amount, by = list(year = lender_loans$posted_yr, country = lender_loans$country_code), FUN = sum, na.rm = TRUE)
+
+country_decoded <- country %>%
+  rename("country_name" = "country", "loan_amount" = "x") %>%
+  filter(country_name %in% c("US", "CA", "GB", "AU", "DE", "NL", "SE", "NO", "JP", "PH")) %>%
+  mutate(country_name = countrycode(country_name, "iso2c", "country.name"))
+
+ggplot(data = country_decoded, aes(x = year, y = log(loan_amount), color = country_name)) +
+  geom_line() +
+  xlab("Year") +
+  ylab("Loan amount (log)") +
+  guides(color = guide_legend(title = "Country")) +
+  scale_fill_viridis(
+  discrete = TRUE,
+  option = "D")+
+  ggtitle("Top 10 lender countries by total loan amount from 2005 to 2012")
+```
+
+Again, here in this graph, we picked top 10 countries with the most lender based on 2011. A line graph emphasizes the trend over years. We also took a log for the loan amount. This is because US has a significantly higher total loan amount compared to other countries, due to the fact that Kiva is based in the US. As a result, a log function would make the data more comparable on a line graph. All lines peak in 2011, and drop intensely in 2012, which matches the result presented in the last two graphs.
+
+
+### -- Part 1: Lender Motivation --
+
+Kiva provides a platform where borrowers can post their needs, and lenders choose who and how much to lend. As a result, whether or not a borrower gets a fund could depend on the nature of their request. On the other hand, it could also depends on lenders' wills. In this section, we'll mainly focus on the lenders' characteristics. As mentioned, the most direct variable is no doubt `loan_because`.
+
+```{r Loan_because, warning = FALSE}
+head(unique(lenders$loan_because))
+```
+
+While the `loan_because` variable allows us to look directly at lenders self-reported motivation, analysis of this variable requires more advanced text processing which we will discuss in a later section. As a next-best option, we know look at the characteristics of borrowers in hopes of identifying patterns in lender preferences. 
+
+```{r}
+top_lenders <- lender_loans %>%
+  filter(country_code %in% c("US", "CA", "GB", "AU", "DE", "NL", "SE", "NO", "JP", "PH"))
+
+top_lender_borrow <- aggregate(top_lenders$loan_amount, by = list(lender_country = top_lenders$country_code, borrower_country <- top_lenders$location.country), FUN = sum, na.rm = TRUE) %>%
+  mutate(lender_country = countrycode(lender_country, "iso2c", "country.name")) %>%
+  arrange(desc(x)) %>%
+  arrange(lender_country) %>%
+  group_by(lender_country) %>%
+  slice(1, 2, 3) %>%
+  mutate(x = format(x, big.mark = ",", trim = TRUE)) %>%
+  rename("Loan Amount (USD)" = "x", "Lender Country" = "lender_country", "Borrower Country" = "Group.2")
+
+knitr::kable(top_lender_borrow, "pipe")
+```
+In the table above, we can see the top three recipient countries of each of the top ten lender countries. This graph shows that lenders may not necessarily prefer borrowers from their own countries.
+
+### -- Part 2: Repayment Factors --
+
+#### Sector
+
+Sector can be an important factor that explains both the lenders' intent and the borrowers' ability to repay. Some sectors could need more liquid capital than others, thus making up a bigger proportion of loan requests on Kiva.com. On the other hand, for lenders, some sectors could be more profitable than others, therefore more promising for lenders to get back their money.
+
+```{r Sector, Paid amount, message=FALSE, warning=FALSE}
+sector_loan <-
+  aggregate(lender_loans$loan_amount, by = list(sector = lender_loans$sector), FUN = sum)
+sector_paid <-
+  mutate(aggregate(lender_loans$paid_amount,
+    by = list(sector = lender_loans$sector),
+    FUN = sum, na.rm = TRUE
+  ))
+
+by_sector <- sector_loan %>%
+  mutate(paid = sector_paid$x) %>%
+  mutate(unpaid = sector_loan$x - paid) %>%
+  rename(loan = x)
+
+by_sector <- by_sector[order(by_sector$loan, decreasing = TRUE), ]
+by_sector_paid <- select(by_sector, sector, paid) %>%
+  mutate(status = "paid") %>%
+  rename("amount" = "paid")
+by_sector_unpaid <- select(by_sector, sector, unpaid) %>%
+  mutate(status = "unpaid") %>%
+  rename("amount" = "unpaid")
+by_sector <- rbind(by_sector_paid, by_sector_unpaid) %>%
+  group_by(sector)
+
+ggplot(by_sector) +
+  aes(x = reorder(sector, amount), y = amount, fill = status, label = amount) +
+  geom_bar(stat = "identity", position = "stack") +
+  theme() +
+  coord_flip() +
+  xlab("Sector") +
+  ylab("Loan amount (USD)") +
+  scale_fill_viridis(
+  discrete = TRUE,
+  option = "D")+
+  ggtitle("Paid vs Unpaid Loan Amount by Sector")
+```
+
+The graph above shows that for most sector, paid loans well exceed unpaid loans. Of the top five sectors which receive the most amount of loans, Agriculture has the highest proportion of unpaid loans. Of all sectors, Housing and Education have the highest unpaid loans, nearly 50%. Whether or not sector is an important factor that predicts the the borrowers' ability to repay the loans is thus meaningful to investigate more deeply.
+
+```{r Sector loan amount with gender, message = FALSE, warning = FALSE }
+
+# Get unique borrower id and total male female borrower count
+loan_sub <- loans %>%
+  group_by(borrower_image_id) %>%
+  summarize(total_m = sum(borrower_m_count), total_f = sum(borrower_f_count))
+
+# Create new borrower type column based on conditions
+loan_sub <- loan_sub %>%
+  mutate(bor_type = if_else(total_m == 1 & total_f == 0, "Male",
+    if_else(total_m == 0 & total_f == 1, "Female", "Group")
+  ))
+
+merge <- left_join(x = lender_loans, y = loan_sub, by = "borrower_image_id")
+
+sec_gender_loan <- merge %>%
+  group_by(sector, bor_type) %>%
+  summarise(tot_amount = sum(loan_amount) / 1000) %>%
+  arrange(desc(tot_amount))
+
+par(mfrow = c(1, 1))
+
+sec_gender_loan <- na.omit(sec_gender_loan)
+
+ggplot(sec_gender_loan) +
+  aes(x = reorder(sector, tot_amount), y = tot_amount, fill = bor_type, label = tot_amount) +
+  geom_bar(stat = "identity", position = "stack") +
+  theme() +
+  coord_flip() +
+  xlab("Sector") +
+  ylab("Total loan amount (USD '000s)") +
+  scale_fill_viridis(
+  discrete = TRUE,
+  option = "D")+
+  ggtitle("Sector vs Loan Amount by Gender")
+```
+We can replace the separate the loan amount in each sector by gender. Since total number of female borrowers far exceed that of male borrowers, in most sector, there is a greater proportion of female borrowers as well. Nevertheless, in Transportation, Construction, and Manufacturing, there are males received a higher loan amount than females.
+
+### Conclusion
+
+For further more in-depth analysis, it's definitely worthy to test whether the discrepency discovered in variables in this section is statistically significant. For instance, the variability in paid vs unpaid proportion in each `sector` could reflect a potential predictor of the borrower's ability to repay, yet it can also be due to the sheer difference in total loan amount in different sectors, as well as the economic structure in each of the borrowers' countries. Again, EDA is the very first step to observe superficial correlation in the data, and this tutorial only shows some of the options. You can also experiment other variables or other visualization presentations, which may inspire you to a completely different direction that could catch the judges' eyes!
