@@ -1,0 +1,549 @@
+---
+title: "Hypothesis Testing "
+author: "Aarushi Verma"
+date: '2022-07-13'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+In this section we look at the borrower characteristics using descriptive statistics and exploratory data analysis. Further we also perform hypothesis testing to assess how individual loans differ based on the gender of the applicant using t-test.
+
+<!-- Our data contains details about which country a borrower belongs to, whether a borrower is an individual male, female, or group borrower. Further, we also have information about the loan amount and which sector the loan is for. We will look at this data to identify if we can see any trends among the borrowers.  -->
+
+## Setup
+
+Before we dive into the analysis, we need to import all the required packages. This includes packages for statistical analysis and visualization.
+
+### Importing the required packages
+
+The packages we have used in this walk through are:
+
+```{r libraries, warning=FALSE, echo=TRUE, message=FALSE}
+library("ggplot2")
+library("plotly")
+library("tidyverse")
+library("readr")
+library("colorblindr")
+library("viridis")
+library("memisc")
+library("kableExtra")
+options(readr.show_col_types = FALSE)
+```
+
+### Reading the data
+
+We use the `lender loans` and `loans` files for this analysis. We import these files using the `read_csv` function.
+
+```{r input_data, echo=TRUE, warning=FALSE, results='asis'}
+
+kiva_ll <- read_csv("main files/lender_loans.csv")
+kiva_loan <- read_csv(("main files/loans.csv"))
+```
+
+## Analysis
+
+### Borrower Characteristics
+
+Looking at Borrower characteristics can give us an insight into any trends that might be present in the borrower data. We may also be able to observe if certain characteristics are associated with borrower's whose loans get funded as well as those whose loans do not get funded. An important thing to note is that we cannot assume that trends observed in our data are reflective of the population owing to the issue of selection bias. We make the assumption that our data is a random sample of the total borrower's at Kiva and any conclusions are applicable only to this data.
+
+In terms of characteristics, we look at the number of female, male and group borrowers, the sector and country the borrower's belong to, and loan amount they have borrowed. We are interested in these characteristics because this may help us isolate any trends among borrowers. We could observe trends that make a certain type of borrower more or sometimes less favorable.
+
+Before we visualize this data, we first need to add an indicator for borrower type and funding status to our data.
+
+__Borrower Type__
+
+
+We are currently using the `lender loans.csv` file which only contains the total number of borrowers. However, the `loans.csv` file contains a split of the count of female and male borrowers. Using this information we can create a new variable which indicates whether a borrower is an individual male borrower, individual female borrower or part of a group. We use the `mutate` function to create this new column named `bor_type`. We update the values based on `if_else` conditions. We apply these conditions on the male borrower and female borrower count column. The conditions we use are:
+
+-   If the value in the m_borrower_count column is equal to 1 and f_borrower_count is equal to 0, we update the value in the `bor_type` column as *Male*
+
+-   If the value in the f_borrower_count column is equal to 1 and m_borrower_count is equal to 0, we update the value in the `bor_type` column as *Female*
+
+-   For any other case, we update the value in the `bor_type` column as *Group*
+
+<!-- We also need to verify that our values have been updated correctly. To do this, we must check that each borrower id is only tagged to one of the 3 values in the Sex column. To do this, we can group our data by borrower image id and take the unique values mapped to each borrower. We can then sort this data in a descending order. As we can see, the highest number in our new dataset is 1, therefore we can move to the next step. -->
+
+<!-- Once we create this new column we need to add the indicators to our original dataset filtered for the top 10 countries. To do this we use the `borrower_image_id`. The `borrower_image_id` column is a unique identifier for borrowers. This column is present in our both our dataframes. Using this common field we map the `bor_type` column to our original data using a left join. The `left join` function takes all the rows in the dataframe specified on the left of the function (i.e. `loan_country`) and only takes the corresponding values from the dataframe on the right (i.e. `kiva_loan_sub`). If the right dataframe has any extra values that are not in the left dataframe, they will be ignored. However, if we have some rows in our left dataframe that are not present in the right dataframe they will still remain in our dataset and have corresponding values for the new column set to NA.  -->
+
+```{r borrower type variable , echo=TRUE,warning=FALSE,results='hide', warnings = FALSE, message=FALSE}
+#Get unique borrower id and total male female borrower count
+kiva_loan_sub <- kiva_loan %>% group_by(borrower_image_id) %>% 
+  summarize(total_m = sum(borrower_m_count),total_f = sum(borrower_f_count))
+
+#Create new borrower type column based on conditions
+kiva_loan_sub <- kiva_loan_sub %>%
+  mutate(bor_type = if_else(total_m == 1 & total_f == 0, "Male",
+                       if_else(total_m == 0 & total_f == 1, "Female","Group")))
+```
+
+After creating the indicator variable, we merge those values to the `lender loans` dataframe and check for NAs. This will help us verify if all the values in our left data frame have found corresponding values or not. For the purpose of this analysis we will drop any NAs in the data since it is not possible to obtain that information elsewhere.
+
+```{r master df creation, echo = TRUE, warning=FALSE, results='hide', message=FALSE}
+
+#Checking if each borrower image id maps to 1 Gender or group
+kiva_loan_sub %>% group_by(borrower_image_id) %>% summarize(count=n_distinct(bor_type)) %>% arrange(desc(count))
+
+#Merging sex group to main data
+kiva_ll_merged <- left_join(x = kiva_ll, y = kiva_loan_sub, by="borrower_image_id")
+
+# Create df for plotting
+bor_chr <- kiva_ll_merged %>% group_by(borrower_image_id,loan_id,location.country,sector,bor_type) %>%
+  summarize(tot_loans = sum(loan_amount),borr_count = max(borrower_count)) %>% arrange(desc(tot_loans))
+```
+
+__Funding Status__
+
+Our data contains a `status` column which indicates the current status of the loan. First we look at the unique values in this column and the number of loans associated with each respectively. Further, we use these values to create an indicator variable for whether a loan has been funded or not.  
+
+
+```{r status unique, echo= TRUE, messgae = FALSE, warning=FALSE}
+
+#Looking at unique values and respective loan count in status column
+status <- kiva_ll_merged %>% group_by(status) %>% summarize(count = length(unique(loan_id)))
+
+status %>% kbl(caption = "Value Counts of Status column") %>% 
+  kable_classic(bootstrap_options ="striped",full_width = F, html_font = "helvetica",position = "left")
+```
+<br/>
+The status column contains 7 unique values. We look at the data dictionary and Kiva website to get a better idea of what each term means. Based on that we make the classification of these terms to our 2 classes  funded and not-funded:  
+
+- Funded: $\texttt{funded, in_repayment, paid}$
+- Not Funded: $\texttt{expired, fundraising}$
+
+* We do not include the loans associated with the status $\texttt{defaulted}$ and $\texttt{refunded}$ in our analysis since they do not clearly fall in either of the classes we have created *
+
+```{r funding indicator,echo= TRUE, message = FALSE, warning = FALSE, include=TRUE}
+
+#creating a vector to subset data for values corresponding to funded and not funded
+funding <- c("expired","funded","fundraising","in_repayment","paid")
+
+#subset data to values in status column that belong to funding vector.
+kiva_ll_funding<- subset(kiva_ll_merged,kiva_ll_merged$status %in% funding)
+
+#creating a vector for values which are associated with funded loans
+funded_vec <- c("paid","in_repayment","funded")
+
+#create indicator variable for Funded or not funded loans
+kiva_ll_funding <- kiva_ll_funding %>% mutate(funding_status = if_else(
+                       kiva_ll_funding$status %in% funded_vec, "Funded","Not Funded"))
+
+```
+
+Once we have added our new indicator columns, we will use descriptive statistics to visualize these and identify trends, if any and gain some insight into borrower characteristics
+
+We look at the distribution of the funding status of loans among borrower types for various sectors. We will visualize this data in a tabular format since our data contains categorical variables. 
+
+```{r contingencytable, echo = TRUE, warning = FALSE, message = FALSE, results='asis'} 
+
+#Creating master df for all plots
+bor_chr <- kiva_ll_funding %>% group_by(borrower_image_id,loan_id,location.country,sector,bor_type, funding_status) %>%
+  summarize(tot_loans = sum(loan_amount),borr_count = max(borrower_count)) %>% arrange(desc(tot_loans))
+
+
+# Creating table to see number of loans and average loan amount given to a borrower for each sector further split between funded and not funded
+
+mytable <- table(bor_chr$sector, bor_chr$funding_status, bor_chr$bor_type)
+Y <- ftable(mytable, col.vars = c(2,3))
+knitr::asis_output(htmltools::htmlPreserve(
+   format_html(Y,
+               show.titles=TRUE,
+               digits=0,
+               format="f",
+               toprule=2,midrule=1,bottomrule=2,
+               split.dec=TRUE,
+               style = ftable_format_stdstyle,
+               margin="2ex auto", 
+               varontop,varinfront)
+))
+```
+
+This table gives us a snapshot of how the number of loans are distributed among sectors. The food sector has the highest number of loans that have been funded specifically for individual female borrowers. Interestingly, the highest no. of loans that have not been funded also belong to the Food sector. These fall into the individual male borrower category.
+
+To further dive into our borrower characteristics, we visualize the data from various perspectives. 
+
+First we look at how the average loan amount per borrower or borrower group varies across countries within each sector. Our data contains 64 unique countries that the borrowers belong to. Visualizing all the countries on a graph would make it too crowded and illegible. For the purpose of this analysis, we filter our data to the top 10 countries that have lent the highest loan amount. The bar chart below represents the top 10 countries. ( _This is irrespective of funding status_ )
+
+```{r top 10 country , echo = TRUE, include= TRUE, results ='asis'}
+# Loan Amount Calculation
+tot_loans_country <- bor_chr %>% group_by(location.country) %>%
+        summarize(tot_loans = sum(tot_loans)/1000) %>%
+  arrange(desc(tot_loans)) %>%
+  mutate(country = factor(location.country, location.country))
+
+#Filter top 10 countries with highest loan amount
+top_10_tot_loan <- head(tot_loans_country,10)
+
+#Bar Chart country vs Loan Amount
+ggplot(top_10_tot_loan)+
+       geom_bar(aes(country,tot_loans, fill =country), stat="identity")+
+  theme(legend.position = "none",axis.text.x = element_text(angle = 30))+
+    xlab("Country")+
+  ylab("Total loan amount in USD ('000s)")+
+  scale_fill_viridis(
+  discrete = TRUE,
+  option = "D") +
+  ggtitle("Top 10 countries by total loan amount")
+
+```
+
+The rest of our analysis is limited to these top 10 countries. We filter our data to these countries, calculate the average loan amount and perform our descriptive statistics.
+
+
+First we look at how the average loan amount varies across countries, for each borrower type. Since the number of borrowers is not evenly distributed across types in our data, looking at the average loan amount would help to make the comparisons more material.
+
+We also  facet these plots by sectors to breakdown our analysis at a sector level as well.
+
+```{r country facet sector fill btype, echo=TRUE, message=FALSE, warning=FALSE, results='asis', fig.width=15, fig.height=12}
+
+# Creating graph for country vs amount facet by sector fill = Borrower type
+
+loan_country_pc <- bor_chr %>% mutate(amount_per_cap= tot_loans/borr_count)
+
+#Create country vector
+country <- c("Peru", "Uganda","Bolivia","Cambodia","Paraguay","Mexico","United States","Tajikistan","Tanzania","Azerbaijan")
+
+# Filter data for top 10 countries
+loan_country <- subset(loan_country_pc,loan_country_pc$location.country %in% country)
+loan_country  <- na.omit(loan_country)
+
+#Bar Chart country vs Loan Amount
+ggplot(loan_country)+ aes(location.country,amount_per_cap, fill =bor_type)+ geom_bar(stat="identity", position = "dodge")+
+  theme(axis.text.x = element_text(angle = 35, margin=margin(t= 10, r = 20, b = 0, l = 0)))+
+    xlab("Country")+
+  ylab("Average loan amount in USD")+
+  scale_fill_OkabeIto(order = c(3,1,5))+
+    theme(axis.text.x=element_text(size=13),axis.text.y=element_text(size=12),plot.title = element_text(size = 20),axis.title=element_text(size=16,face="bold"))+
+  ggtitle("Country vs avg. loan amount by borrower type ")+
+  facet_wrap(~sector, ncol = 3)+
+  theme(strip.text.x = element_text(
+      size = 16)) + labs(fill="Borrower Type")
+
+```
+
+From the plot we can observe that average loan amount received by borrowers in the United States is much higher than other countries. However, due to this we are unable to gauge any trends for the other countries due to the variation in the scale. We try to remove United States from our filter and visualize this plot again.
+
+```{r country facet sector w/o US, echo=TRUE, message=FALSE, warning=FALSE, results='asis', fig.width=15, fig.height=12}
+
+# Creating graph for country vs amount facet by sector fill = Borrower type excluding United States
+
+#Create country vector
+country <- c("Peru", "Uganda","Bolivia","Cambodia","Paraguay","Mexico","Tajikistan","Tanzania","Azerbaijan")
+
+# Filter data for top 10 countries
+loan_country_woUS <- subset(loan_country_pc,loan_country_pc$location.country %in% country)
+loan_country_woUS  <- na.omit(loan_country_woUS)
+
+#Bar Chart country vs Loan Amount
+ggplot(loan_country_woUS)+ aes(location.country,amount_per_cap, fill =bor_type)+ geom_bar(stat="identity", position = "dodge")+
+  theme(axis.text.x = element_text(angle = 35, margin=margin(t= 10, r = 20, b = 0, l = 0)))+
+    xlab("Country")+
+  ylab("Average loan amount in USD")+
+  scale_fill_OkabeIto(order = c(3,1,5))+
+    theme(axis.text.x=element_text(size=13),axis.text.y=element_text(size=12),plot.title = element_text(size = 20),axis.title=element_text(size=16,face="bold"))+
+  ggtitle("Country vs avg. loan amount by borrower type ")+
+  facet_wrap(~sector, ncol = 3)+
+  theme(strip.text.x = element_text(
+      size = 16)) + labs(fill="Borrower Type")
+
+```
+
+From this plot we can see more trends for the other countries. We can observe that loans in Personal Use and Entertainment Sector have received relatively lower average loan amounts for all borrower types. 
+
+***
+
+Next we look at how the average loan amount varies across countries within each sector with respect to the funding status of the loans.
+
+```{r country facet sector fill fund stat, echo=TRUE, message=FALSE, warning=FALSE, results='asis', fig.width=15, fig.height=12}
+
+#Bar Chart country vs Loan Amount
+ggplot(loan_country)+ aes(location.country,amount_per_cap, fill =funding_status)+ geom_bar(stat="identity", position = "dodge")+
+  theme(axis.text.x = element_text(angle = 35, margin=margin(t= 10, r = 20, b = 0, l = 0)))+
+    xlab("Country")+
+  ylab("Average loan amount in USD")+
+  scale_fill_OkabeIto(order = c(2,6))+
+    theme(axis.text.x=element_text(size=13),axis.text.y=element_text(size=12),plot.title = element_text(size = 25),axis.title=element_text(size=16,face="bold"))+
+  ggtitle("Country vs avg. loan amount by funding status ")+
+  facet_wrap(~sector, scales="free_y", ncol = 3)+
+  theme(strip.text.x = element_text(
+      size = 16)) + labs(fill="Funding Status")
+
+```
+As we have already seen our data contains more funded loans than not funded loans, as is visible from our plot. From this plot we can see that all loans in the Education and Health sector have been funded. Another interesting observation is that in the Wholesale sector, United states has more Not funded loans than Funded loans.
+
+We can also look at our data from another perspective. How does the funding status vary with respect to borrower type. We look at this at the sector level.
+
+
+```{r bor_type facet fill funding status, echo = TRUE, warning = FALSE, message = FALSE, results='asis',fig.width=15, fig.height=12}
+
+# Creating graph for bor_type vs amount facet by sector fill = Funding status
+
+ggplot(loan_country)+ aes(bor_type,amount_per_cap, fill =funding_status)+ geom_bar(stat="identity", position = "dodge")+
+    xlab("Sector")+
+  ylab("Average loan amount in USD")+
+  scale_fill_OkabeIto(order = c(2,6))+
+    theme(axis.text.x=element_text(size=13),plot.title = element_text(size = 25),axis.title=element_text(size=16,face="bold"))+
+  ggtitle("Borrower type vs Avg. Amount by Funding Status")+
+  facet_wrap(~sector, ncol = 3)+
+  theme(strip.text.x = element_text(
+      size = 16)) + labs(fill = "Funding Status")
+```
+
+From this visualization we observe that Female borrowers in the Arts, Education, Health, Retail and Services sector have higher funded loan amounts than the Male and Group borrowers.Group borrowers seem to have the lowest amount of not funded loans across all sectors. Male borrowers have a much higher amount of not funded loans than other borrower types.
+
+```{r bor_type facet country, echo = TRUE, warning = FALSE, message = FALSE, results='asis',fig.width=8, fig.height=3, include=FALSE}
+# # Creating graph for bor_type vs amount facet by country fill = Funding status
+# 
+# ggplot(loan_country)+ 
+#   aes(location.country,amount_per_cap, fill =funding_status)+ 
+#   geom_bar(stat="identity", position = "dodge")+
+#     xlab("Country ")+
+#   ylab("Average loan amount in USD")+
+#   scale_fill_OkabeIto(order = c(2,6))+
+#     theme(axis.text.x=element_text(size=13,angle = 35,
+#                                    margin=margin(t= 10, r = 20, b = 0, l = 0)),
+#           plot.title = element_text(size = 20),
+#           axis.title=element_text(size=16,face="bold"))+
+#   ggtitle("Country vs Avg. Amount by Funding Status")+
+#   facet_wrap(~bor_type, ncol = 5)+
+#   theme(strip.text.x = element_text(
+#       size = 16)) + labs(fill = "Funding Status")
+
+```
+
+
+<!-- **Add plots of funded not funded by gender  ** -->
+<!-- - sector wise funded not funded -->
+<!-- - year wise funded not funded -->
+
+```{r year wise funding status, include = FALSE}
+
+# ## Year wise funded not funded
+# 
+# kiva_ll_funding$posted_yr <- factor(kiva_ll_funding$posted_yr) 
+# 
+# year_wise_funded <- kiva_ll_funding %>%
+#   group_by(posted_yr,funding_status) %>%
+#   summarize(tot_loans = sum(loan_amount/1000))
+# 
+# ggplot(year_wise_funded)+ 
+#   aes(posted_yr,tot_loans, 
+#       fill =factor(funding_status,levels=c("Not Funded","Funded")))+ geom_bar(stat="identity", position = "stack")+
+#   labs(fill= "Funding Status")+
+#     xlab("Year")+
+#   ylab("loan amount in USD '000s")+
+#   scale_fill_OkabeIto(order = c(3, 1))
+# 
+#   
+```
+  
+```{r Year wise borrower facet funding status , echo = FALSE, warning = FALSE, message = FALSE, include=FALSE}
+
+## Year wise Borrower Type by  Funding status
+# 
+# kiva_ll_funding$posted_yr <- factor(kiva_ll_funding$posted_yr) 
+# 
+# year_wise_funded <- kiva_ll_funding %>%
+#   group_by(posted_yr,funding_status,bor_type) %>%
+#   summarize(tot_loans = sum(loan_amount/1000))
+# 
+# ggplot(na.omit(year_wise_funded))+ 
+#   aes(posted_yr,tot_loans, 
+#       fill =bor_type)+ geom_bar(stat="identity", position = "dodge")+
+#   labs(fill= "Borrower Type")+
+#     xlab("Year")+
+#   ylab("loan amount in USD '000s")+
+#     theme(axis.text.x=element_text(size=15),axis.title=element_text(size=16,face="bold"))+
+#   scale_fill_OkabeIto(order = c(3, 1,5))+
+#   facet_wrap(~funding_status)+
+#   theme(strip.text.x = element_text(
+#       size = 16))
+  
+```
+
+  
+  
+  
+```{r, include=FALSE}
+
+# 
+# 
+# ggplot(kiva_ll_funding)+ aes(posted_yr,sum(loan_amount), fill =funding_stat)+ geom_bar(stat="identity", position = "dodge")+
+#   theme(axis.text.x = element_text(angle = 25))+
+#     xlab("Year")+
+#   ylab("Average loan amount in USD")+
+#   scale_fill_OkabeIto(order = c(1, 3))
+#     theme(axis.text.x=element_text(size=15),plot.title = element_text(size = 25),axis.title=element_text(size=16,face="bold"))+
+#   ggtitle("Sector wise Avg. Amount given to each Borrower Type")+
+#   facet_wrap(~sector, scales="free_y", ncol = 3)+
+#   theme(strip.text.x = element_text(
+#   size = 16))
+```
+
+
+<!-- Next we visualize this data using a plot. The graph below represents the country and the total loan amount for each sector present in the data. This data is further split at the borrower type level. For the purpose of the visualization, we subset our data to the top 10 countries with the highest loan amount lent. Our dataset contains a too many countries, and plotting them all would crowd the graph making it illegible. -->
+
+```{r facetgraph,echo= FALSE, fig.align='center', results = "asis", fig.width=12, fig.height=8, include=FALSE}
+
+# #Create country vector
+# country <- c("Peru", "Uganda","Bolivia","Cambodia","Paraguay","Mexico","United States","Tajikistan","Tanzania","Azerbaijan")
+# 
+# # Filter data for top 10 countries
+# loan_country <- subset(bor_chr,bor_chr$location.country %in% country)
+# loan_country  <- na.omit(loan_country)
+# 
+# #Bar Chart country vs Loan Amount
+# 
+# ggplot(loan_country)+ aes(location.country,tot_loans, fill =bor_type)+ 
+#   geom_bar(stat="identity", position = "dodge")+
+#   theme(axis.text.x = element_text(angle = 25))+
+#     xlab("Country")+
+#   ylab("Total loan amount in USD")+
+#   scale_fill_OkabeIto(order = c(1, 3, 5))+
+#     theme(axis.text.x=element_text(size=15),plot.title = element_text(size = 25),axis.title=element_text(size=16,face="bold"))+
+#   ggtitle("Sector wise Loan Amount given to each Borrower Type")+
+#   facet_wrap(~sector, scales="free_y", ncol = 3)+
+#   theme(strip.text.x = element_text(
+#       size = 16))
+```
+
+<!-- From the graph we can observe that the trend for borrowing varies extensively across countries and sectors. Some noticeable trends are - -->
+
+<!-- -   Group borrowers have received higher loan amount as compared to male and female borrowers. -->
+<!-- -   The entertainment sector has received the lowest funding across all the sectors except for the United States -->
+
+We have looked at the borrower characteristics visually through our graphs and descriptive statistics. We now use Hypothesis Testing to further analyze our data.
+
+
+```{r ,echo= FALSE, include = FALSE, fig.align='center', results = "asis", fig.width=12, fig.height=8 }
+
+# # Create df for plotting
+# #Add funding status and then use this for other codes
+# bor_chr <- kiva_ll_merged %>% group_by(borrower_image_id,loan_id,location.country,sector,bor_type) %>%
+#   summarize(tot_loans = sum(loan_amount),borr_count = max(borrower_count)) %>% arrange(desc(tot_loans))
+# 
+# # Create df for plotting
+# loan_country_pc <- bor_chr %>% mutate(amount_per_cap= tot_loans/borr_count)
+# 
+# #Create country vector
+# country <- c("Peru", "Uganda","Bolivia","Cambodia","Paraguay","Mexico","United States","Tajikistan","Tanzania","Azerbaijan")
+# 
+# # Filter data for top 10 countries
+# loan_country <- subset(loan_country_pc,loan_country_pc$location.country %in% country)
+# loan_country  <- na.omit(loan_country)
+# 
+# #Bar Chart country vs Loan Amount
+# 
+# ggplot(loan_country)+ aes(location.country,amount_per_cap, fill =bor_type)+ geom_bar(stat="identity", position = "dodge")+
+#   theme(axis.text.x = element_text(angle = 25))+
+#     xlab("Country")+
+#   ylab("Average loan amount in USD")+
+#   scale_fill_OkabeIto(order = c(3,1,5))+
+#     theme(axis.text.x=element_text(size=15),plot.title = element_text(size = 25),axis.title=element_text(size=16,face="bold"))+
+#   ggtitle("Sector wise Avg. Amount given to each Borrower Type")+
+#   facet_wrap(~sector, scales="free_y", ncol = 3)+
+#   theme(strip.text.x = element_text(
+#       size = 16))
+
+```
+
+### Hypothesis Testing
+
+Hypothesis testing is a statistical inference method used to test an assumption about the data or more specifically the population parameters. We are interested in understanding how individual loans differ based on the gender of the applicant. The total loan amount is biased by the number of borrowers i.e. the number of female and group borrowers is much larger  than the male borrowers, therefore we look at the average loan amount. To keep the analysis simple we subset our data to only Male and Female borrowers and test our hypothesis using a 2 sample t-test. A t-test is a statistical test that compares the means of two samples. By subset-ing and calculating the average loan amounts, we are comparing sample means using t-test to check our hypothesis.
+
+Our null and alternative hypothesis are:
+
+$H_{0} :$ $\texttt{The true difference between the average loan amount for Males and average loan amount for Females is equal to 0}$
+
+$H_{1}:$ $\texttt{The true difference between the average loan amount for Males and average loan amount for Females is not equal to 0}$
+
+* $H_{0}$ is also known as Null Hypothesis and $H_{1}$ is know as the alternative hypothesis.*
+
+
+Before we proceed with the t-test, we need check some assumptions to ensure we are performing a valid t-test.  
+
+- The data values are independent.The amount of the loan borrowed by one borrower does not depend on the loan amount borrowed by another person.
+- We assume that number of borrowers in our data represent a random sample from the population of borrowers at Kiva.com
+- The values are continuous. The loan amount is a continuous variable
+- We assume that the data is normally distributed
+- We assume that the variance for men and women is equal 
+
+We will also check the normality and variance assumption before proceeding with the test. 
+
+```{r filter Male Female, out.width = '50%',echo = TRUE, fig.show='hold', warning = FALSE, message=TRUE}
+
+# Subset data to Male and Female borrowers only
+pc_gender <- subset(loan_country_pc,loan_country_pc$bor_type %in% c("Male","Female"))
+
+par(mfrow=c(1,1)) 
+
+#Plot distribution of average loan amount
+ggplot(pc_gender, aes(x=amount_per_cap, color = bor_type,fill=bor_type)) +
+  geom_histogram(position="identity", alpha=0.5, bins = 40) + 
+  theme(legend.position="none")+
+  guides(color=FALSE)+
+  ggtitle("Distribution of avg. loan amount by Gender")+
+  xlab("Avg. Loan Amount in USD")+
+  ylab("Count")
+
+#Plot distribution of transformed average loan amount variable using log
+ggplot(pc_gender, aes(x=log(amount_per_cap), color = bor_type,fill=bor_type)) +
+  geom_histogram(position="identity", alpha=0.5, bins = 40) + 
+  labs(fill = "Borrower Type") +
+  guides(color=FALSE)+
+  ggtitle("Distribution of log avg. loan amount by Gender") +
+  xlab("Log of Avg. Loan Amount in USD")+
+  ylab("Count")
+
+
+```
+From the histograms we can see that the loan amount is highly right skewed. We transform our loan amount variable using a log transformation and we can observe that the distribution of the transformed variable is more normally distributed. This the case for both Male and Female borrower type.
+
+We check the variance assumption by calculating the standard deviation and variance by  using the `sd` and `var` function.
+
+
+```{r summary statistics,echo=TRUE,results='asis',warning=FALSE,message=FALSE}
+sum_stat <- pc_gender %>% 
+  group_by(bor_type) %>% 
+  summarize (mean = mean(amount_per_cap),
+             variance = var(amount_per_cap),
+             variance_log = var(log(amount_per_cap)), 
+             std_dev = sd(amount_per_cap), 
+             std_dev_log = sd(log(amount_per_cap)))
+
+
+
+sum_stat %>% kbl(caption = "Borrower type summary statistics") %>% 
+  kable_classic(bootstrap_options ="striped",full_width = F, html_font = "helvetica",position = "left")
+
+```
+We can see that the variance values and std deviation are similar. This helps to support the assumption of equal variance. As there assumptions are satisfied we can move forward to with the t test. 
+
+To perform the t-test we first separate our data into the respective groups of female and male borrowers. We use the `t-test` function to perform the t-test and calculate the t-statistic and p-values.
+
+
+```{r hypothesis test, echo = TRUE, message=FALSE,warning=FALSE}
+female <- subset(pc_gender,pc_gender$bor_type == "Female")
+female_loan <- female %>% pull(amount_per_cap)
+
+male <- subset(pc_gender,pc_gender$bor_type == "Male")
+male_loan <- male %>% pull(amount_per_cap)
+
+
+hyp <- t.test(female_loan,male_loan)
+hyp
+```
+
+Our p-value is less than the alpha value 0.05 which tells us that it is statistically significant. A statistically significant p-value indicates strong evidence against our null hypothesis. This means that there is less than a 5% probability the null hypothesis is correct. Therefore, we reject the null hypothesis that there is no difference in the sample means of average loan amount of male and female borrowers.
+
+## Limitations and Conclusion
+
+Our analysis has a few potential limitations. We have made a few assumptions when creating our indicator variables borrower type and funding status. We have also excluded some values in the status column while creating funding status. It is possible that those observations could have provided us with some more insight. Another limitation is the size of the observations for Not funded loans. There are very few Not Funded loans when compared to Funded Loans and this hinders any comparison we would like to make. We need to assume that our data does not contain the entire population of Not Funded loans.
+
+To conclude, through descriptive statistics we observed that Food and Retail sectors have the highest number of funded loans. We also looked at the borrower types across sectors among the top 10 lending countries during 2005-2012. We noted that borrowers in the United States tend to receive a higher average loan amount than other countries. Through our hypothesis test we learned that the average loan amount received by a borrower does differ based on the borrower's gender. 
+
+Performing a paired t-test is one way of testing our hypothesis, however there are multiple other methods that can be explored to test this hypothesis and further analyze this data.
