@@ -1,0 +1,104 @@
+---
+title: "Survival Analysis"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+options(digits = 3)
+```
+
+```{r include=FALSE}
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(loo)
+library(jtools)
+library(countrycode)
+library(rstanarm)
+library(bayesplot)
+library(pROC)
+```
+
+We are also interested in how the status of loan tends to change over time. We computed a new variable `time`, which is the time between when the loan is funded and when the loan is paid back, and stored it in a new data set `ds`. We would use the `survival` package for survival analysis, which focuses on the expected duration of time until occurrence of an event of interest (in our case the repayment of loan). The `surv()` function takes `span`and `status` as input and creates an object which serves as the input of `survfir()` function. We pass \~1 in `survfit()` function so that the function to fit the model on basis of the survival object and have an interrupt.
+
+```{r}
+loans <- read.csv("data/loans.csv")
+ds <- loans %>% 
+  mutate(paid_amount = if_else(is.na(paid_amount), 0, paid_amount),
+         continent = countrycode(sourcevar = location.country,
+                            origin = "country.name",
+                            destination = "continent"),
+         span = (paid_yr - funded_yr)*365 + (paid_mo-funded_mo)*30 + (paid_day-funded_day)) %>%
+  filter(status == "paid"|status == "defaulted") %>% 
+  mutate(dif = loan_amount-funded_amount,
+         time = (funded_yr - posted_yr)*12+(funded_mo - posted_mo),
+         sex = case_when(borrower_m_count == 0 ~ "female",
+                         borrower_f_count == 0 ~ "male",
+                         TRUE ~ "mixed"),
+         status = if_else(status == "paid", 1, 0)) %>% 
+  select(status, paid_yr, paid_mo, paid_day, funded_yr, funded_mo, funded_day, sector, continent, span, sex)
+```
+
+```{r}
+library(survival)
+surv <- survfit(Surv(span,status==1)~1, data = ds)
+library(survminer)
+ggsurvplot(
+  fit = survfit(Surv(span,status==1)~1, data = ds),
+  xlab="Number of days before the loan is repaid", 
+  ylab="Overall survival probability")
+```
+
+Here, the x-axis specifies the number of days before the loan is repaid and the y-axis specifies the probability of loan being not repaid.
+
+One quantity of interest in a survival analysis is the probability of surviving beyond a certain number of years. For example, to estimate the probability of loan not being repaid to 1 year, we can use `summary()` with the `time` argument. The `span` variable in our data is in days, so we are using `time = 365n`:
+
+```{r}
+summary(surv, time = 365/4)
+summary(surv, time = 365/2)
+summary(surv, time = 365)
+summary(surv, time = 365*2)
+```
+
+As the output shows, the probability of borrowers not paying back the loan to a quarter year is 98%, to half a year is 69.6%, to 1 year is 26.4%, and to 2 years is 0.554%. Thus, we can conclude that almost all borrowers don't pay back the loan in the first quarter after they receive the fund; the majority of borrowers would repay the loan in 1 year; after 2 years only few borrowers haven't pay back their loan.
+
+Then, we took a look at the survival curve by loan sectors, continent, and sex of borrowers respectively:
+
+```{r}
+ggsurvplot(
+  fit = survfit(Surv(span,status==1)~sector, data = ds),
+  legend.title = "Sector",
+  legend.labs = sort(unique(ds$sector)),
+
+  xlab="Number of days before the loan is repaid", 
+  ylab="Overall survival probability")
+
+ggsurvplot(
+  fit = survfit(Surv(span,status==1)~continent, data = ds),
+  legend.title = "Continent",
+  legend.labs = sort(unique(ds$continent)),
+  xlab="Number of days before the loan is repaid", 
+  ylab="Overall survival probability")
+
+ggsurvplot(
+  fit = survfit(Surv(span,status==1)~sex, data = ds),
+  legend.title = "Sex",
+  legend.labs = sort(unique(ds$sex)),
+  xlab="Number of days before the loan is repaid", 
+  ylab="Overall survival probability")
+```
+
+There seems to be no big difference in time of repayment across sectors. As for the continent, borrowers in Oceania tend to complete their loan repayments about a year later than borrowers in other continents. A borrower group that consists of both males and females tends to complete the loan repayment in the shortest period, and a female borrower or a female-only borrower group generally takes shorter time period to complete the loan repayment than a male borrower or a male-only borrower group does.
+
+For numerical comparisons, we can use the `summary()` function to display the mean and median times it takes for each group to complete the loan repayment. For example, for `sex`:
+
+```{r}
+summary(survfit(Surv(span,status==1)~sex, data = ds))$table
+```
+
+The median time is 337 days for a male borrower or a male-only borrower group, 251 days for a female borrower or a female-only borrower group to fully repay the loan, and 165 days for a mixed-gender borrower group. There appears to be a shorter period to complete the loan repayment for mixed-gender borrower groups compared to single-gender borrower groups, and female borrowers tend to fully pay back their loans in a shorter time than male borrowers. This conclusion is consistent with our logistic model under the frequentist approach.

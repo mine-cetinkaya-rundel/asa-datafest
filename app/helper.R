@@ -9,24 +9,20 @@ library(usethis)
 library(wordcloud)
 library(shinyWidgets)
 library(shinydashboard)
+library(scales)
 
 
 # load data ---------------------------------------------------------
 
 datafest <- read_csv(here::here("app/data/datafest.csv"))
-datafest <- datafest %>%
-  mutate(Awards = "", Title = "", Team = "", Presentation = "")
-
-#datafest <- datafest %>% add_column(nickname = "", .after = "host")
-#write.csv(datafest, "app/data/datafest.csv")
+datafest_titles <- read_csv(here::here("app/data/titles.csv"))
 major_df <- read_csv(here::here("app/data/majors.csv"))
-
-
-#Map
 
 # get data for universities page
 universities_df <- datafest %>%
   select(host, year, num_part)
+
+#Map
 
 # set map bounds ----------------------------------------------------
 left <- floor(min(datafest$lon))
@@ -121,3 +117,7 @@ source_data <- c("LAPD","Kiva.com","eHarmony","GridPoint","Edmunds.com","Ticketm
                  #"Indeed","Candadian National Women's Rugby Team","Covid-19 (Virtual Data Challenge)","Rocky Mountain Posion and Drug Safety","Play2Prevent Lab")
 datasource <- data.frame(year, source_data)
 
+# ## Subset dataframe to Year Country, State, City, Majors, Participating institutions
+# country_hosts_df <- subset(datafest,
+#                            df =="Yes",
+#                            select= c("year","host","country","state","city","other_inst"))
