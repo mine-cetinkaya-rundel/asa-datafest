@@ -1,11 +1,6 @@
 ---
-title: "Index"
+title: "DataFest"
+sidebar: false
 ---
 
-This is a Quarto website.
-
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
-
-```{r}
-1 + 1
-```
+Landing Page TBA
