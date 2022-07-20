@@ -41,8 +41,8 @@ We use the `lender loans` and `loans` files for this analysis. We import these f
 
 ```{r input_data, echo=TRUE, warning=FALSE, results='asis'}
 
-kiva_ll <- read_csv("main file/lender_loans.csv")
-kiva_loan <- read_csv(("main file/loans.csv"))
+kiva_ll <- read_csv("main files/lender_loans.csv")
+kiva_loan <- read_csv(("main files/loans.csv"))
 ```
 
 ## Analysis
