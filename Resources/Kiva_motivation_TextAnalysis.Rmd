@@ -59,7 +59,7 @@ We use the `lender_loans.csv` file for our analysis. We import these files using
 
 ```{r input_data, echo=TRUE, warning=FALSE, results='asis', message = FALSE}
 
-kiva_ll <- read_csv("data/lender_loans.csv")
+kiva_ll <- read_csv("main files/lender_loans.csv")
 data_preview <- subset(kiva_ll, select=c("loan_id","loan_because","use","loan_amount"))
 
 #Specifying rows for which we have data to showcase various reasons provided by lenders for lending
