@@ -136,9 +136,14 @@ ggplot(d, aes(x = loan_amount, group = status)) +
 
 ```
 
+[ADD AN INTRODUCTION, MOTIVATION FOR PERFORMING LOGISTIC REGRESSION? WHAT IS LOGISTIC REGRESSION AND WHY IS IT SUITABLE TO USE HERE?]
+
 # Logistic Regression
 
-The response variable that we would like to look at is the loan status. As shown in the EDA section, it has 8 levels. Intuitively an appropriate model for such a response variable with be a multinomial logistic regression, but that would be hard to interpret. Thus, we are only looking at the completed loans, which are either repaid or not repaid. We filtered the data set for observations whose status is "paid" or "defaulted". With a binary response variable, we could then fit a logistic regression on the data. To start with, we mutated the `status` variable to be 1 if it was "paid" and 0 if it was "defaulted", such that the baseline level would be "defaulted".
+The response variable that we would like to look at is the loan status which is represented by the 'status' column in our data. As shown in the EDA section, it has 8 levels. Intuitively an appropriate model for such a response variable with be a multinomial logistic regression, but that would be hard to interpret. Thus, we are only looking at the completed loans, which are either repaid or not repaid. We filtered the data set for observations whose status is "paid" or "defaulted". With a binary response variable, we could then fit a logistic regression on the data. To start with, we mutated the `status` variable to be 1 if it was "paid" and 0 if it was "defaulted", such that the baseline level would be "defaulted".
+
+[WHY WOULD MULTINOMIAL BE HARD TO INTERPRET?]
+
 
 ```{r}
 d <- loan %>% 
@@ -147,7 +152,7 @@ d <- d %>%
   mutate(status = if_else(status == "paid", 1, 0))
 ```
 
-The logistic regression model is an example of a broad class of models known as generalized linear models (GLM), in which a linear relationship between the response and predictors is built even though their underlying relationship is not linear. Since we have a single-observation binary response variable, we are using a Bernoulli GLM. A Bernoulli distributions the discrete probability distribution of a random variable which takes the value 1 with probability $p$ and the value 0 with probability $q=1-p$.The likelihood for one observation $y$ can be written as a Bernoulli PMF over possible outcomes $k$: $$\begin{equation}
+The logistic regression model is an example of a broad class of models known as generalized linear models (GLM). In GLMs a linear relationship between the response and predictors is built even though their underlying relationship is not linear. Since we have a single-observation binary response variable, we are using a Bernoulli GLM. A Bernoulli distributions is the discrete probability distribution of a random variable which takes the value 1 with probability $p$ and the value 0 with probability $q=1-p$.The likelihood for one observation $y$ can be written as a Bernoulli PMF over possible outcomes $k$: $$\begin{equation}
     f(k;p) =
     \left\{
         \begin{array}{cc}
@@ -157,21 +162,21 @@ The logistic regression model is an example of a broad class of models known as 
     \right.
 \end{equation},$$
 
-The two most common link functions used for binomial GLMs are the logit and probit functions, but for binary outcomes a common choice is the *logit link.* The logit link convert probabilities to log odds, and therefore the model coefficients can be easily interpreted in terms of odds ratios. When the logit link function is used the model is often referred to as a logistic regression model (the inverse logit function is the CDF of the standard logistic distribution).
+The two most common link functions used for binomial GLMs are the logit and probit functions. For binary outcomes a common choice is the *logit link.* The logit link converts probabilities to log odds, and therefore the model coefficients can be easily interpreted in terms of odds ratios. When the logit link function is used the model is often referred to as a logistic regression model (the inverse logit function is the CDF of the standard logistic distribution).
 
 ## Frequentist Approach
 
 First, we fitted a general logistic regression model with frequentist approach. Basically, frequentist probability or frequentism is an interpretation of probability; it defines an event's probability as the limit of its relative frequency in many trials (the long-run probability). Probabilities can be found (in principle) by a repeatable objective process (and are thus ideally devoid of opinion). The response variable we were using is `status,` since we wanted to explore which factors are affecting the loan repayment. For the predictors, we are interested in the following variables:
 
--   `loan_amount`, because we think that the smaller loans tend to be more easily paid back then the larger ones;
+-   `loan_amount`, because we think that the smaller loans tend to be more easily paid back than the larger ones.
 
--   `sector`, `posted_yr`, `continent,`as our EDA shows the status distribution of loan differs across sectors, the year when the loan is posted on Kiva, and the continent where the borrower is located;
+-   `sector`, `posted_yr`, `continent,`as our EDA shows the status distribution of loan differs across sectors, the year when the loan is posted on Kiva, and the continent where the borrower is located.
 
--   `time`, which is a variable we created representing the time from when the loan is posted to when the loan is funded, in months, since sometimes the time it take for the borrowers to receive the loan may affect their financial situation and thus affect their ability to repay the loan according to **t**he terms agreed.
+-   `time`, which is a variable we created representing the time from when the loan is posted to when the loan is funded, in months, since sometimes the time it takes for the borrowers to receive the loan may affect their financial situation and thus affect their ability to repay the loan according to **t**he terms agreed.
 
 -   `dif`, which is a variable we created to calculate the difference between the loan amount and funded amount, because whether the borrowers get the full amount of loan they requested may affect their financial ability to pay back the loan.
 
--   `sex`, which indicates the sex of a borrower group, where "mixed" means in a borrower group there are both males and females.
+-   `sex`, which indicates the sex of a borrower group, where "mixed" means there are both males and females in a borrower group.
 
 ```{r}
 d <- d %>% 
@@ -187,7 +192,7 @@ d <- d %>%
 unique(d$dif)
 ```
 
-However, a closer look at the variable `dif` showed that after we filtered the original data set to contain only completed loans, all the observations has funded amount equal to the loan amount. Thus, the variable `dif` would not make any difference on the response variable, so we were excluding it from our model.
+A closer look at the variable `dif` showed that after we filtered the original data set to contain only completed loans, all the observations have funded amount equal to the loan amount. Thus, the variable `dif` would not make any difference on the response variable, so we were excluding it from our model.
 
 Next, we split our data into training set and test set and fitted a frequentist logistic model on the training set:
 
@@ -231,11 +236,13 @@ We can see a formatted model output using the `summ()` function:
 summ(final)
 ```
 
-From the p-values of model coefficients, the significant predictors are `loan_amount`, `sector`, `posted_yr`, and `continent`, which have p-values less than 0.05. `sex` can also be considered significant if we choose the significance level $\alpha=0.1$ . Here we can notice that the coefficient of `loan_amount` is about 0, meaning that the odds of loan repayment is expected to be almost the same across all values of loan amount, which indicates the loan amount has little effect on whether the loan is paid back or not. Also, the p-value is extremely close to 0, indicating a strong statistical significance of this predictor. Another finding was that the loans in the "Education" sector is the most likely to be repaid, while loans in the "Personal Use" sector is the least likely to be repaid. In terms of the continent where the loan transaction took place, Oceania has the highest odd ratio for the loan being repaid while Africa has the lowest odd ratio. A borrower group that consists of both males and females has the highest odd ratio of repaying the loan, and a female borrower or a female-only borrower group generally has higher odd ratio of repaying the loan than a male borrower or a male-only borrower group.
+From the p-values of model coefficients, the significant predictors are `loan_amount`, `sector`, `posted_yr`, and `continent`, which have p-values less than 0.05. `sex` can also be considered significant if we choose the significance level $\alpha=0.1$ . Here we can notice that the coefficient of `loan_amount` is about 0, meaning that the odds of loan repayment is expected to be almost the same across all values of loan amount, which indicates the loan amount has little effect on whether the loan is paid back or not. Also, the p-value is extremely close to 0, indicating a strong statistical significance of this predictor. Another finding was that the loans in the "Education" sector are most likely to be repaid, while loans in the "Personal Use" sector are least likely to be repaid. In terms of the continent where the loan transaction took place, Oceania has the highest odds ratio for the loan being repaid while Africa has the lowest odds ratio. A borrower group that consists of both males and females has the highest odds ratio of repaying the loan, and a female borrower or a female-only borrower group generally has higher odds ratio of repaying the loan than a male borrower or a male-only borrower group.
 
-An example of interpretation of the coefficients is: "0.42" for `posted_yr` means that for a given year when the loan is posted, the expected odds of the loan getting repaid is $e^{0.42}\approx1.52$ times the odds of the loan getting repaid if the loan is posted the previous year.
+Here is an example of interpretation of the coefficients for posted year:
 
-To evaluate our model, we're using the ROC (*Receiver Operating Characteristic*) curves to evaluate different thresholds for a classification problem. In a nutshell, ROC curve visualizes a confusion matrix for every threshold. ROC curve shows a *False positive rate* on the X-axis. This metric informs us about the proportion of negative class classified as positive. We used `ggroc()` from the `PROC` package to plot the ROC curve.
+The coefficient for p`posted_yr` is "0.42" which means that for a given year when the loan is posted, the expected odds of the loan getting repaid is $e^{0.42}\approx1.52$ times the odds of the loan getting repaid if the loan is posted the previous year.
+
+To evaluate our model, we're using the ROC (*Receiver Operating Characteristic*) curve to evaluate different thresholds for a classification problem. In a nutshell, ROC curve visualizes a confusion matrix for every threshold. ROC curve shows a *False positive rate* on the X-axis. This metric informs us about the proportion of the negative class classified as positive. We used `ggroc()` from the `PROC` package to plot the ROC curve.
 
 ```{r}
 predicted1 <- predict(final, newdata = testing)
@@ -264,3 +271,7 @@ auc(testing$status,predicted11)
 ```
 
 Here we got an AUC score of 0.7158, which means there is about 70% chance that our model will be able to distinguish between positive class (paid) and negative class (defaulted). In general, an AUC of 0.5 suggests no discrimination, 0.7 to 0.8 is considered acceptable, 0.8 to 0.9 is considered excellent, and more than 0.9 is considered outstanding.
+
+[ADD A CONCLUSION WITH FINAL TAKEAWAYS]
+[ADD COMMENTS TO CODE]
+[ADD HEADING FOR DIFFERENT SECTIONS]

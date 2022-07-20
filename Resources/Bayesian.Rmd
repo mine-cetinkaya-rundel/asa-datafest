@@ -40,6 +40,8 @@ d <- d %>%
                          TRUE ~ "mixed"))
 ```
 
+[ADD AN INTRODUCTION, MOTIVATION FOR FITTING BAYESIAN MODEL? WHAT IS BAYESIAN MODEL AND WHY IS IT SUITABLE TO USE HERE?]
+
 Next, we would like to fit a Bayesian model. While a frequentist assumes that there are true values of the parameters of the model and computes the point estimates of the parameters, a Bayesian asserts that only data are real, and treats the model parameters as probability distributions which are to be inferred.
 
 The four steps of a Bayesian analysis are:
@@ -81,9 +83,11 @@ Here's the output of the model:
 post1
 ```
 
-It includes the point estimates (median) as well as the uncertainty estimates (median absolute deviation) for coefficients of all predictors. Here, the coefficients differ from those in the previous model with frequentist approach: again we can notice that the median estimate for `loan_amount` is 0.0 with a median absolute deviation of 0.0, indicating no relationship between loan amount and the loan status; the loans in the "Health" sector becomes the most likely to be repaid, and loans in the "Services" sector is becomes the least likely to be repaid. Together with Oceania, Europe now has the same highest odd ratio for the loan being repaid while Africa still has the lowest odd ratio. Contrary to what the frequentist model suggests, a borrower group that consists of both males and females has the lowest odd ratio of repaying the loan, and a female borrower or a female-only borrower group generally has lower odd ratio of repaying the loan than a male borrower or a male-only borrower group.
+It includes the point estimates (median) as well as the uncertainty estimates (median absolute deviation) for coefficients of all predictors. Here, the coefficients differ from those in the previous model with frequentist approach: again we can notice that the median estimate for `loan_amount` is 0.0 with a median absolute deviation of 0.0, indicating no relationship between loan amount and the loan status; the loans in the "Health" sector become the most likely to be repaid, and loans in the "Services" sector is become the least likely to be repaid. Together with Oceania, Europe now has the same highest odds ratio for the loan being repaid while Africa still has the lowest odds ratio. Contrary to what the frequentist model suggests, a borrower group that consists of both males and females has the lowest odds ratio of repaying the loan, and a female borrower or a female-only borrower group generally has lower odds ratio of repaying the loan than a male borrower or a male-only borrower group.
 
-Next, we would like to draw a caterpillar plot, which displays the median and estimate interval for all the coefficients sorted by their medians so that we can get a closer look at which variables are expected to have greater effects on the response variable. First, we sort the predictor variables in our model `post1` by coefficients. To do this, we extract the `coefficient` element from `post1` and converted it into a data frame which has only one column "post1.coefficients"; we then sorted the rows based on the value of the coefficients. Next, we extracted the row names except for the first row (the intercept) and store it for use in drawing the caterpillar plot.
+[IS THERE A WAY TO LINK TO THE OTHER DOCUMENT WHEN REFERRING TO THE FREQUENTIST MODEL HERE? JUST IN CASE SOMEONE COMES TO THIS PAGE FIRST THEY MAY BE CONFUSED WHAT YOU ARE REFERRING TO]
+
+Next, we would like to draw a caterpillar plot, which displays the median and estimate interval for all the coefficients sorted by their medians so that we can get a closer look at which variables are expected to have greater effects on the response variable. First, we sorted the predictor variables in our model `post1` by coefficients. To do this, we extracted the `coefficient` element from `post1` and converted it into a data frame which had only one column "post1.coefficients". We then sorted the rows based on the value of the coefficients. Next, we extracted the row names except for the first row (the intercept) and stored it for use in drawing the caterpillar plot.
 
 ```{r}
 coef <- data.frame(post1$coefficients) %>% 
@@ -94,7 +98,9 @@ cate <- mcmc_intervals(as.matrix(post1), pars = order, prob = 0.95, prob_outer =
 cate
 ```
 
-This caterpillar plot created by the `mcmc_intervals()` function in the `bayesplot` package. It plots the 95% uncertainty intervals computed from posterior draws with all chains merged. The intervals are sorted by the median of each coefficient.
+This caterpillar plot is created by the `mcmc_intervals()` function in the `bayesplot` package. It plots the 95% uncertainty intervals computed from posterior draws with all chains merged. The intervals are sorted by the median of each coefficient. 
+
+[WHAT DO WE SEE IN THE CATERPILLAR PLOT? WRITE ABOUT SOME OBSERVATIONS]
 
 ### Model Evaluation
 
@@ -103,6 +109,8 @@ This caterpillar plot created by the `mcmc_intervals()` function in the `bayespl
 ```
 
 In the code chunk above, we assessed the strength of our model via its posterior predictive LOOCV (Leave One Out Cross-Validation). We can see from the output that PSIS-LOO result is reliable as all Pareto k estimates are small (k\< 0.5). However as we know, this accuracy rate is quite meaningless unless we have something to compare it to. So we created a baseline model with no predictors for comparison:
+
+[WHAT IS CROSS VALIDATION? WHAT IS PSIS-LOO?]
 
 ```{r eval=FALSE}
 post0 <- stan_glm(status ~ 1, data = d1,
@@ -129,6 +137,8 @@ pred <- colMeans(preds)
 
 We calculate these posterior predictive probabilities in order to determine the classification accuracy of our model. If the posterior probability of success for an individual is greater or equal to 0.5, then we would predict that observation to be a success (and similarly for less than 0.5). For each observation, we can compare the posterior prediction to the actual observed value. The proportion of times we correctly predict an individual (i.e. [prediction = 0 and observation = 0] or [prediction = 1 and observation = 1]) is our classification accuracy.
 
+[WHAT DOES PREDICT OBSERVATION TO BE A SUCCESS MEAN IN CONTEXT OF THE PROBLEM? ADD AND EXAMPLE TO EXPLAIN WHAT THIS PARAGRAPH MEANS WITH RESPECT TO LOAN REPAYMENT?]
+
 ```{r}
 pr <- as.integer(pred >= 0.5)
 round(mean(xor(pr,as.integer(d$status==0))),3) #classification accuracy
@@ -136,17 +146,23 @@ round(mean(xor(pr,as.integer(d$status==0))),3) #classification accuracy
 
 However, we should really be evaluating the classification accuracy of our model on unseen data. This can be done via a LOOCV approach or by using a test dataset. Here we use the former approach to illustrate the function `E_loo()`, which uses importance weights generated from the `loo()` function.
 
+[ADD EXPLANATION FOR WHY DO WE NEED TO EVALUATE ACCURACY ON UNSEEN DATA]
+
 ```{r}
 #evaluating the classification accuracy of our model on unseen data using a test dataset
 ploo=E_loo(preds, loo1$psis_object, type="mean", log_ratios = -log_lik(post1))$value
 round(mean(xor(ploo>0.5,as.integer(d$status==0))),3)
 ```
 
-The accuracy here is very high. However, this does not necessarily mean our model is doing great in prediction; instead, it is probably just due to the high unbalance of the data, with almost all observations.
+The accuracy here is very high. However, this does not necessarily mean our model is doing great in prediction. Instead, it is probably just due to the high unbalance of the data, with almost all observations. 
+
+[EXPLAIN WHAT UNBALANCE MEANS? MAYBE GIVE % TO GIVE READER AN IDEA OF HOW UNBALANCED]
 
 ```{r}
 qplot(pred, ploo)
 ```
+
+[ADD HEADING TO PLOT]
 
 In the plot above we can see the small difference in posterior predictive probabilities and LOO probabilities.
 
@@ -179,3 +195,4 @@ save(post1, file = "data/post1.RData")
 save(post0, file = "data/post0.RData")
 ```
 
+[ADD CONCLUSION]
