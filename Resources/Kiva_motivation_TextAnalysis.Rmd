@@ -15,9 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-The goal of this section is to understand what motivates people to lend money to developing-nation entrepreneur through text analysis. Text analysis is an effective way to parse text and structure data to extract insights that are valuable and meaningful. Our motivation for performing text analysis arises from the structure of our data. Our data contains two columns that are free text fields that captures lenders' reasons for lending and borrowers' reasons for their intended use of the loan amount. Additionally, only focusing on borrower characteristics poses the issue of selection bias which may be present in the data. Through text analysis we can look at the data from another perspective.
-
-<!--# HOW DOES SELECTION BIAS OCCUR HERE? ALSO NOT SURE WHETHER TO ADD A BRIEF INTRODUCTION OF WHAT SELECTION BIAS IS-->
+The goal of this section is to understand what motivates people to lend money to developing-nation entrepreneur through text analysis. Text analysis is an effective way to parse text and structure data to extract insights that are valuable and meaningful. Our motivation for performing text analysis arises from the structure of our data. Our data contains two columns that are free text fields that captures lenders' reasons for lending and borrowers' reasons for their intended use of the loan amount. Additionally, only focusing on borrower characteristics poses the issue of selection bias which may be present in the data. Selection bias refers to the differences in our sample that may not be a complete representation of the actual population. We do not have information regarding the population of borrowers at Kiva. It is possible that our data is not randomly selected and only reflects a certain aspect of the population. Through text analysis we can look at the data from a different perspective without the bias affecting our inference.
 
 We will perform analysis on those text fields and assess what may have made a lender favor a certain borrower.
 
@@ -45,6 +43,7 @@ library("viridis")
 
 library("rmarkdown")
 library("readr")
+library("kableExtra")
 options(readr.show_col_types = FALSE)
 ```
 
@@ -207,10 +206,6 @@ This concludes our analysis of the `loan_because` column. We looked at our data 
 
 Next, we look at what were the most common words used by borrowers that may have motivated lenders to lend to them. To narrow down our analysis, we further separate our loans into two classes - funded and not funded. We further analyze if there is a trend in the words used by the borrowers whose loans get funded versus borrowers whose loans did not.
 
-<!-- Our original dataset contains 125,580 rows. Working with this entire data is not feasible. When we try to compute the term frequency matrix for each word, the matrix becomes too large and the calculation cannot take place. For our analysis we can subset our data to the top 10 countries which receive the highest total loan amount in our data. This helps us narrow down the data to a size we can work with. However, our analysis now becomes limited to only these 10 countries. -->
-
-<!-- First, we plot a barchart to find out which countries received the highest average loan amount. -->
-
 Our data contains a `status` column which indicates the current status of the loan. First we look at the unique values in this column and the number of loans associated with each respectively. Further, we use these values to create an indicator variable for whether a loan has been funded or not.
 
 ```{r status, echo= TRUE, messgae = FALSE}
@@ -246,39 +241,6 @@ funding_stat <- funding_stat %>%
 
 #Create dataframe with unique borrower id, use for loan and corresponding funding status
 loan_use <- unique(funding_stat[ , c("borrower_image_id", "use","funding_status")])
-```
-
-```{r, echo=FALSE, include = FALSE}
-
-# # Loan Amount Calculation
-# tot_loans_country <- kiva_ll %>% group_by(location.country) %>%
-#         summarize(tot_loans = sum(loan_amount)/1000) %>%
-#   arrange(desc(tot_loans)) %>%
-#   mutate(country = factor(location.country, location.country))
-# 
-# #Filter top 10 countries with highest loan amount
-# top_10_tot_loan <- head(tot_loans_country,10)
-# 
-# #Bar Chart country vs Loan Amount
-# ggplot(top_10_tot_loan)+
-#        geom_bar(aes(country,tot_loans, fill =country), stat="identity")+
-#   theme(legend.position = "none",axis.text.x = element_text(angle = 30))+
-#     xlab("Country")+
-#   ylab("Total loan amount in USD ('000)")+
-#   scale_fill_viridis(
-#   discrete = TRUE,
-#   option = "D") +
-#   ggtitle("Top 10 countries by total loan amount")
-
-```
-
-```{r country filter, echo= FALSE, include=FALSE}
-# #Create country vector
-# country <- c("Peru", "Uganda","Bolivia","Cambodia","Paraguay","Mexico","United States","Tajikistan","Tanzania","Azerbaijan")
-# 
-# # Filter data for top 10 countries
-# loan_country <- filter(kiva_ll,
-#                        kiva_ll$location.country %in% country)
 ```
 
 We filter our dataset to these values and create our `funding_status` indicator variable. Next, we separate the data into two data frames - Funded loans and Not funded loans. We then perform the same text analysis steps as we did in the lenders section on the `use` column.
@@ -372,6 +334,16 @@ ggplot(notfunded_dtm_d[1:10,])+ aes(x = reorder(word, -freq), y=freq)+
 
 Similar to the bar charts we create two word clouds, one representing the most common words used by the borrowers whose Loans have been funded and the other representing loans that did not get funded. We plot all the words in the dataset which have a minimum frequency of 5. The results are not too different from the bar chart but this is a different way of analyzing text data and we also get to see more words that were used by the lenders for their motivation for lending
 
+```{r, echo=TRUE, header=FALSE, message = FALSE, }
+#Table to see no. of funded and not funded loans
+
+funding_loans_count <- funding_stat %>% group_by(funding_status) %>% summarize(loan_count = length(unique(loan_id)))
+
+funding_loans_count %>% kbl(caption = "Value Counts of funding status") %>% 
+  kable_classic(bootstrap_options ="striped",full_width = F, html_font = "helvetica",position = "left")
+
+```
+
 ```{r, echo=TRUE,header= FALSE,out.width="50%", message = FALSE, warning = FALSE, fig.show='hold'}
 #Borrower Wordcloud
 set.seed(1234)
@@ -390,9 +362,7 @@ wordcloud(words = notfunded_dtm_d$word, freq = notfunded_dtm_d$freq, min.freq = 
 
 From the bar chart we can see that the word with highest frequency is **buy** followed by **purchase**. This implies that most borrowers are applying for loans to be able to source the raw materials for their businesses. The remaining 8 words have less than half frequency than of the top 2 words. It is interesting to note that both funded and not funded loans have the same 2 words with the highest frequency.
 
-Based on the word cloud we also observe that there is not a lot of difference in the kinds of words used by borrowers who fall into the Funded class as opposed to those in the Not funded class. However, we must also factor in that the number of loans that belong to Funded class is much higher than the loans belonging to the Not Funded class. This is also portrayed in the frequency on the bar charts, where the numbers are much lower in the Not Funded class.
-
-<!--# NOT SURE WHETHER TO ADD CODE LIKE "loan_use %>% count(funding_status)" TO GIVE A MORE DIRECT PICTURE OF THE DIFFERENCE IN NUMBER OF LOANS IN EACH OF THE TWO CLASSES-->
+Based on the word cloud we also observe that there is not a lot of difference in the kinds of words used by borrowers who fall into the Funded class as opposed to those in the Not funded class. However, we must also factor in that the number of loans that belong to Funded class is much higher than the loans belonging to the Not Funded class (This can be seen from the table).
 
 ## Conclusion
 
