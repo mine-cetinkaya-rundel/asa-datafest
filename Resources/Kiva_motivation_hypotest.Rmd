@@ -11,11 +11,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-In this section we look at the borrower characteristics using descriptive statistics and exploratory data analysis. Further we also perform hypothesis testing to assess how individual loans differ based on the gender of the applicant using t-test.
+In this section we focus on the first part of the prompt: understanding the motivations of lending among contributors to Kiva. Our approach here is suitable for students with limited statistical background: we first explore the general characteristics of borrowers, then we contrast the characteristics of funded borrowers to those of non-funded borrowers, using both descriptive statistics and hypothesis testing. Since lenders choose whom they fund, the results of this analysis will reveal the types of borrowers which lenders prefer, and may suggest motivations for lending.
+
+An important caveat to this analysis is that the 2012 DataFest dataset is not an exhaustive record of all Kiva borrowers, but a subset selected for the purposes of the competition. In order to proceed with our analysis, we must assume that the data provided is a representative sample. However, note that if this assumption is violated, i.e., if the data differs systematically from the full population of Kiva transactions due to seleciton bias, our inferences will not be valid.
 
 ## Setup
 
-Before we dive into the analysis, we need to import all the required packages. This includes packages for statistical analysis and visualization.
+Before we dive into the analysis, we need to import all the required packages. This includes packages for statistical analysis and visualization - many of which you will be familiar with from earlier sections.
 
 ### Importing the required packages
 
@@ -37,6 +39,8 @@ options(readr.show_col_types = FALSE)
 
 We use the `lender loans` and `loans` files for this analysis. We import these files using the `read_csv` function.
 
+WHY, WHAT'S IN THESE FILES
+
 ```{r input_data, echo=TRUE, warning=FALSE, results='asis'}
 
 kiva_ll <- read_csv("main files/lender_loans.csv")
@@ -47,13 +51,11 @@ kiva_loan <- read_csv(("main files/loans.csv"))
 
 ### Borrower Characteristics
 
-Looking at Borrower characteristics can give us an insight into any trends that might be present in the borrower data. We may also be able to observe if certain characteristics are associated with borrowers whose loans get funded as well as those whose loans do not get funded. An important thing to note is that we cannot assume that trends observed in our data are reflective of the population owing to the issue of selection bias. Selection bias refers to the differences in our sample that may not be a complete representation of the actual population. We do not have information regarding the population of borrowers at Kiva. It is possible that our data is not randomly selected and only reflects a certain aspect of the population of borrowers at Kiva. Therefore any conclusions we make through our analysis are applicable only to this data.
-
-In terms of characteristics, we look at the number of female, male and group borrowers, the sector and country the borrowers belong to, and the loan amount they have borrowed. We are interested in these characteristics because this may help us isolate any trends among borrowers We could observe trends that make a certain type of borrower more or sometimes less favorable.
-
-Before we visualize the data, we first need to add an indicator for borrower type and funding status to our data set. This will help improve our visualizations and communicate trends at these two levels.
+We begin by getting an overview of the characteristics of all would-be borrowers, including their gender, sector, country, and requested loan amount. Because we will ultimately be interested in differences between funded and non-funded borrowers, we first add an indicator for borrower type and funding status to our data set. This will help improve our visualizations and communicate trends at these two levels.
 
 **Borrower Type**
+
+DEFINE BORROWER TYPE
 
 We are currently using the `lender_loans.csv` file which only contains the total number of borrowers. However, the `loans.csv` file contains a split of the count of female and male borrowers. Using this information we can create a new variable which indicates whether a borrower is an individual male borrower, individual female borrower or part of a group. We use the `mutate` function to create this new columnm and name it `bor_type`. We update the values based on `if_else` conditions. We apply these conditions on the male borrower and female borrower count column. The conditions we use are:
 
@@ -160,6 +162,7 @@ knitr::asis_output(htmltools::htmlPreserve(
 ))
 ```
 
+TOO MUCH INFO IN THIS TABLE, I WOULD NOT SEPARATE BY FUNDING STATUS (THAT WILL BE YOUR LATER ANALYSIS) AND PROBABLY CHANGE TO SIDE BY SIDE BAR GRAPHS WITH X-AXIS SECTOR AND TWO BARS FOR EACH SECTOR (MALE AND FEMALE)
 
 This table gives us a snapshot of how the number of loans are distributed among sectors. The food sector has the highest number of loans that have been funded specifically for individual female borrowers. Interestingly, the highest number of loans that have not been funded also belong to the Food sector. These fall into the individual male borrower category.
 
@@ -189,6 +192,10 @@ ggplot(top_10_tot_loan)+
   ggtitle("Top 10 countries by total loan amount")
 
 ```
+
+IT'S NOT CLEAR TO ME HOW THE BY-COUNTRY ANALYSIS RELATES TO THE PROMPT. I WOULD REDUCE OR REMOVE THIS.
+
+THERE IS TOO MUCH INFORMATION IN ALL OF THESE GIANT FACETED BAR PLOT, LET'S TALK ABOUT WHAT YOU WANT TO COMMUNICATE AND FIGURE OUT HOW TO DO IT MORE CLEARLY.
 
 The rest of our analysis is limited to these 10 countries. We filter our data to these countries, calculate the average loan amount and perform our descriptive statistics.
 
@@ -313,9 +320,7 @@ ggplot(loan_country) +
 
 From this visualization we observe that Female borrowers in the Arts, Education, Health, Retail and Services sector have higher funded loan amounts than the Male and Group borrowers. Group borrowers seem to have the lowest amount of not funded loans across all sectors. Male borrowers have a much higher amount of not funded loans than other borrower types.
 
-
 We have looked at the borrower characteristics visually through our graphs and descriptive statistics. We now use Hypothesis Testing to further analyze our data.
-
 
 ### Hypothesis Testing
 
@@ -369,7 +374,7 @@ ggplot(pc_gender, aes(x = log(amount_per_cap), color = bor_type, fill = bor_type
 
 From the histograms we can see that the loan amount is highly right skewed. We transform our loan amount variable using a log transformation and we can observe that the distribution of the transformed variable is more normally distributed. This the case for both Male and Female borrower type.
 
-We check the variance assumption by calculating the standard deviation and variance by using the `sd` and `var` function on the transformed data. 
+We check the variance assumption by calculating the standard deviation and variance by using the `sd` and `var` function on the transformed data.
 
 ```{r summary statistics,echo=TRUE,results='asis',warning=FALSE,message=FALSE}
 sum_stat <- pc_gender %>% 
@@ -386,7 +391,7 @@ sum_stat %>% kbl(caption = "Borrower type summary statistics") %>%
 
 ```
 
-We can see that the variance values and standard deviation are not equal or similar. However, we do see that they are similar for the transformed variable. Since the variances are very different, our assumption is not satisfied. However we can still test our hypothesis using Welch's T-test with unequal variances. 
+We can see that the variance values and standard deviation are not equal or similar. However, we do see that they are similar for the transformed variable. Since the variances are very different, our assumption is not satisfied. However we can still test our hypothesis using Welch's T-test with unequal variances.
 
 ```{r, include = FALSE}
 var.test(amount_per_cap ~ bor_type, data = pc_gender)$p.value
@@ -411,8 +416,7 @@ hyp <- t.test(female_loan,male_loan)
 hyp
 ```
 
-Our p-value is less than the alpha value 0.05. This implies that it is statistically significant. A statistically significant p-value indicates strong evidence against our null hypothesis. Therefore, we reject the null hypothesis that there is no difference in the sample means of average loan amount of male and female borrowers. 
-
+Our p-value is less than the alpha value 0.05. This implies that it is statistically significant. A statistically significant p-value indicates strong evidence against our null hypothesis. Therefore, we reject the null hypothesis that there is no difference in the sample means of average loan amount of male and female borrowers.
 
 ## Limitations and Conclusion
 
