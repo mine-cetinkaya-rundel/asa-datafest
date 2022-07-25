@@ -12,7 +12,15 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 options(digits = 3)
 ```
 
+# Set Up
+
+We loaded the packages, read in the data set, and manipulated the data as we did in the frequentist logistic regression section [**here**](link to be added after embedded in the website)
+
 ```{r include=FALSE}
+loans <- read.csv("data/loans.csv")
+```
+
+```{r}
 library(dplyr)
 library(tidyverse)
 library(ggplot2)
@@ -22,15 +30,17 @@ library(countrycode)
 library(rstanarm)
 library(bayesplot)
 library(pROC)
-loans <- read.csv("data/loans.csv")
+
 loan <- loans %>% 
   mutate(paid_amount = if_else(is.na(paid_amount), 0, paid_amount),
          continent = countrycode(sourcevar = location.country,
                             origin = "country.name",
                             destination = "continent"))
+
 d <- loan %>% 
   filter(status == "paid"|status == "defaulted") %>% 
   mutate(status = if_else(status == "paid", 1, 0))
+
 d <- d %>% 
   select(loan_id, loan_amount, status, funded_amount, posted_yr, posted_mo, posted_day, funded_yr, funded_mo, funded_day, sector, continent, borrower_m_count, borrower_f_count) %>% 
   mutate(dif = loan_amount-funded_amount,
@@ -40,9 +50,9 @@ d <- d %>%
                          TRUE ~ "mixed"))
 ```
 
-[ADD AN INTRODUCTION, MOTIVATION FOR FITTING BAYESIAN MODEL? WHAT IS BAYESIAN MODEL AND WHY IS IT SUITABLE TO USE HERE?]
+# Bayesian Approach
 
-Next, we would like to fit a Bayesian model. While a frequentist assumes that there are true values of the parameters of the model and computes the point estimates of the parameters, a Bayesian asserts that only data are real, and treats the model parameters as probability distributions which are to be inferred.
+While a frequentist assumes that there are true values of the parameters of the model and computes the point estimates of the parameters, a Bayesian asserts that only data are real, and treats the model parameters as probability distributions which are to be inferred.
 
 The four steps of a Bayesian analysis are:
 
@@ -53,9 +63,9 @@ The four steps of a Bayesian analysis are:
 
 To run this model using Bayesian estimation, we can use the `rstanarm` package. This package wraps Stan code for common regression models. In contrast with the frequentist procedure, in Bayesian estimation we need to specify priors for our parameters. The `rstanarm` function equivalent of g`lm()` is `stan_glm()`, which supports every link function that `glm()` supports. Rather than generate point estimates and a covariance, Stan instead **simulates draws from the posterior distribution of our parameters** using a sophisticated algorithm called Hamiltonian Monte Carlo. Stan output is a matrix in which each row is a simulated draw from the posterior and each column is a parameter (or function of parameters). With `stan_glm()`, binomial models with a logit link function can typically be fit slightly faster than the identical model with a probit link because of how the two models are implemented in Stan. In the following code, we simply specify the chosen link, and set priors for the intercept and the predictor coefficients.
 
-### Model Fitting
+## Data Splitting
 
-First, we set a seed so that we get the same results for randomization. Then, to reduce time-complexity that `stan_glm()` needs to fit a model, we sample 5000 from the 68707 observations.
+First, we set a seed so that we get the same results for randomization. Then, to reduce time-complexity that `stan_glm()` needs to fit a model, we sampled 5000 from the 68707 observations.
 
 ```{r}
 seed <- 1
@@ -66,6 +76,9 @@ d1 <- sample_n(d, 5000)
 load("data/post1.Rdata")
 load("data/post0.Rdata")
 ```
+
+## Model Fitting
+
 In the following code, we specified the chosen link, and set priors for the intercept and the predictor coefficients.
 
 ```{r eval=FALSE}
@@ -83,24 +96,26 @@ Here's the output of the model:
 post1
 ```
 
-It includes the point estimates (median) as well as the uncertainty estimates (median absolute deviation) for coefficients of all predictors. Here, the coefficients differ from those in the previous model with frequentist approach: again we can notice that the median estimate for `loan_amount` is 0.0 with a median absolute deviation of 0.0, indicating no relationship between loan amount and the loan status; the loans in the "Health" sector become the most likely to be repaid, and loans in the "Services" sector is become the least likely to be repaid. Together with Oceania, Europe now has the same highest odds ratio for the loan being repaid while Africa still has the lowest odds ratio. Contrary to what the frequentist model suggests, a borrower group that consists of both males and females has the lowest odds ratio of repaying the loan, and a female borrower or a female-only borrower group generally has lower odds ratio of repaying the loan than a male borrower or a male-only borrower group.
+It includes the point estimates (median) as well as the uncertainty estimates (median absolute deviation) for coefficients of all predictors. Here, the coefficients differ from those in the previous model with frequentist approach: again we can notice that the median estimate for `loan_amount` is 0.0 with a median absolute deviation of 0.0, indicating no relationship between loan amount and the loan status; the loans in the "Health" sector become the most likely to be repaid, and loans in the "Services" sector is become the least likely to be repaid. Together with Oceania, Europe now has the same highest odds ratio for the loan being repaid while Africa still has the lowest odds ratio. Contrary to what our frequentist model suggests ([**here**](link to be added after embedded in the website)), a borrower group that consists of both males and females has the lowest odds ratio of repaying the loan, and a female borrower or a female-only borrower group generally has lower odds ratio of repaying the loan than a male borrower or a male-only borrower group.
 
-[IS THERE A WAY TO LINK TO THE OTHER DOCUMENT WHEN REFERRING TO THE FREQUENTIST MODEL HERE? JUST IN CASE SOMEONE COMES TO THIS PAGE FIRST THEY MAY BE CONFUSED WHAT YOU ARE REFERRING TO]
+## Model Parameter Visualization
 
-Next, we would like to draw a caterpillar plot, which displays the median and estimate interval for all the coefficients sorted by their medians so that we can get a closer look at which variables are expected to have greater effects on the response variable. First, we sorted the predictor variables in our model `post1` by coefficients. To do this, we extracted the `coefficient` element from `post1` and converted it into a data frame which had only one column "post1.coefficients". We then sorted the rows based on the value of the coefficients. Next, we extracted the row names except for the first row (the intercept) and stored it for use in drawing the caterpillar plot.
+Next, we drew a caterpillar plot, which displays the median and estimate interval for all the coefficients sorted by their medians so that we can get a closer look at which variables are expected to have greater effects on the response variable. First, we sorted the predictor variables in our model `post1` by coefficients. To do this, we extracted the `coefficient` element from `post1` and converted it into a data frame which had only one column "post1.coefficients". We then sorted the rows based on the value of the coefficients. Next, we extracted the row names except for the first row (the intercept) and stored it for use in drawing the caterpillar plot.
 
 ```{r}
+# extract the coefficients and sort them in ascending order
 coef <- data.frame(post1$coefficients) %>% 
   arrange(post1.coefficients)
+
+# store the variables corresponding to the coefficients as a list
 order <- rownames(coef)[-1]
 
+# plot the sorted coefficients with uncertainty interval
 cate <- mcmc_intervals(as.matrix(post1), pars = order, prob = 0.95, prob_outer = 1)
 cate
 ```
 
-This caterpillar plot is created by the `mcmc_intervals()` function in the `bayesplot` package. It plots the 95% uncertainty intervals computed from posterior draws with all chains merged. The intervals are sorted by the median of each coefficient. 
-
-[WHAT DO WE SEE IN THE CATERPILLAR PLOT? WRITE ABOUT SOME OBSERVATIONS]
+This caterpillar plot is created by the `mcmc_intervals()` function in the `bayesplot` package. It plots the 95% uncertainty intervals computed from posterior draws with all chains merged. The intervals are sorted by the median of each coefficient, and the ordering gives us a more direct sense of which variables have greater effects on the loan repayment status.
 
 ### Model Evaluation
 
@@ -108,9 +123,7 @@ This caterpillar plot is created by the `mcmc_intervals()` function in the `baye
 (loo1 <- loo(post1, save_psis = TRUE))
 ```
 
-In the code chunk above, we assessed the strength of our model via its posterior predictive LOOCV (Leave One Out Cross-Validation). We can see from the output that PSIS-LOO result is reliable as all Pareto k estimates are small (k\< 0.5). However as we know, this accuracy rate is quite meaningless unless we have something to compare it to. So we created a baseline model with no predictors for comparison:
-
-[WHAT IS CROSS VALIDATION? WHAT IS PSIS-LOO?]
+In the code chunk above, we assessed the strength of our model via its posterior predictive LOOCV (Leave One Out Cross-Validation). Cross-validation is a technique for evaluating models by training the models on subsets of the available input data and evaluating them on the complementary subset of the data. LOOCV is a type of cross-validation approach in which each observation is considered as the validation set and the rest ($N-1$) observations are considered as the training set. PSIS-LOO CV is and efficient approximate LOOCV for Bayesian models using Pareto smoothed importance sampling ([**PSIS**](https://www.rdocumentation.org/link/PSIS?package=loo&version=2.5.1&to=%3Dpsis)). We can see from the output that PSIS-LOO result is reliable as all Pareto k estimates are small (k\< 0.5). However as we know, this accuracy rate is quite meaningless unless we have something to compare it to. So we created a baseline model with no predictors for comparison:
 
 ```{r eval=FALSE}
 post0 <- stan_glm(status ~ 1, data = d1,
@@ -135,34 +148,26 @@ preds <- posterior_linpred(post1, transform=TRUE)
 pred <- colMeans(preds)
 ```
 
-We calculate these posterior predictive probabilities in order to determine the classification accuracy of our model. If the posterior probability of success for an individual is greater or equal to 0.5, then we would predict that observation to be a success (and similarly for less than 0.5). For each observation, we can compare the posterior prediction to the actual observed value. The proportion of times we correctly predict an individual (i.e. [prediction = 0 and observation = 0] or [prediction = 1 and observation = 1]) is our classification accuracy.
-
-[WHAT DOES PREDICT OBSERVATION TO BE A SUCCESS MEAN IN CONTEXT OF THE PROBLEM? ADD AND EXAMPLE TO EXPLAIN WHAT THIS PARAGRAPH MEANS WITH RESPECT TO LOAN REPAYMENT?]
+We calculate these posterior predictive probabilities in order to determine the classification accuracy of our model. If the posterior probability of paying back the loan for an borrower is greater or equal to 0.5, then we would predict that observation to be a repaid loan (and similarly for less than 0.5). For each observation, we can compare the posterior prediction to the actual observed value. The proportion of times we correctly predict an individual (i.e. [prediction = 0 and observation = 0] or [prediction = 1 and observation = 1]) is our classification accuracy.
 
 ```{r}
 pr <- as.integer(pred >= 0.5)
-round(mean(xor(pr,as.integer(d$status==0))),3) #classification accuracy
+round(mean(xor(pr,as.integer(d1$status==0))),3) #classification accuracy
 ```
 
-However, we should really be evaluating the classification accuracy of our model on unseen data. This can be done via a LOOCV approach or by using a test dataset. Here we use the former approach to illustrate the function `E_loo()`, which uses importance weights generated from the `loo()` function.
-
-[ADD EXPLANATION FOR WHY DO WE NEED TO EVALUATE ACCURACY ON UNSEEN DATA]
+We should also evaluate the classification accuracy of our model on unseen data to see whether it is generalized or overfitting. This can be done by using a test dataset or via a LOOCV approach. Since we've talked about the former approach in the frequentist section ([**here**](link to be added after embedded in the website)), in this section we would use the latter to illustrate the function `E_loo()`, which uses importance weights generated from the `loo()` function.
 
 ```{r}
-#evaluating the classification accuracy of our model on unseen data using a test dataset
-ploo=E_loo(preds, loo1$psis_object, type="mean", log_ratios = -log_lik(post1))$value
-round(mean(xor(ploo>0.5,as.integer(d$status==0))),3)
+ploo = E_loo(preds, loo1$psis_object, type = "mean", log_ratios = -log_lik(post1))$value
+round(mean(xor(ploo > 0.5, as.integer(d1$status == 0))),3)
 ```
 
-The accuracy here is very high. However, this does not necessarily mean our model is doing great in prediction. Instead, it is probably just due to the high unbalance of the data, with almost all observations. 
-
-[EXPLAIN WHAT UNBALANCE MEANS? MAYBE GIVE % TO GIVE READER AN IDEA OF HOW UNBALANCED]
+The accuracy is 0.976, which is very high. However, this does not necessarily mean our model is doing great in prediction. Instead, it is probably just due to the high unbalance of the data, with almost all observations having the value "paid" for the response variable.
 
 ```{r}
-qplot(pred, ploo)
+qplot(pred, ploo,geom=c("point", "smooth")) +
+  ggtitle("LOO probability vs. posterior predictive probability")
 ```
-
-[ADD HEADING TO PLOT]
 
 In the plot above we can see the small difference in posterior predictive probabilities and LOO probabilities.
 
@@ -194,5 +199,3 @@ Also, we can save our models in a folder so that RStudio doesn't need to go thro
 save(post1, file = "data/post1.RData")
 save(post0, file = "data/post0.RData")
 ```
-
-[ADD CONCLUSION]
