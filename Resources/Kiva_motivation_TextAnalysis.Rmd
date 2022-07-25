@@ -15,15 +15,19 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-The goal of this section is to understand what motivates people to lend money to developing-nation entrepreneur through text analysis. Text analysis is an effective way to parse text and structure data to extract insights that are valuable and meaningful. Our motivation for performing text analysis arises from the structure of our data. Our data contains two columns that are free text fields that captures lenders' reasons for lending and borrowers' reasons for their intended use of the loan amount. Additionally, only focusing on borrower characteristics poses the issue of selection bias which may be present in the data. Selection bias refers to the differences in our sample that may not be a complete representation of the actual population. We do not have information regarding the population of borrowers at Kiva. It is possible that our data is not randomly selected and only reflects a certain aspect of the population. Through text analysis we can look at the data from a different perspective without the bias affecting our inference.
+DEFINE TEXT ANALYSIS SOMEWHERE IN THIS PARAGRAPH
 
-We will perform analysis on those text fields and assess what may have made a lender favor a certain borrower.
+In this section we continue our analysis of part one of the prompt: motivations for lending. Whereas in the previous section we attempted to infer lender motivation from systematic differences in funded and non-funded borrowers, here we directly analyze the free responses provided by lenders using text analysis. Text analysis is an effective way to parse text and structure data to extract insights that are valuable and meaningful. The data contains two relevant columns containing free text quoting the self-reported lenders' reasons for lending and borrowers' reasons for their intended use of the loan amount. We will perform analysis on those text fields and assess what may have made a lender favor a certain borrower.
+
+EXPLAIN HOW BORROWER MOTIVATION IS RELEVANT TO THE PROMPT - DOESN'T IT ASK ABOUT REASONS FOR LENDING? UNLESS YOU'RE COMPARING NON-FUNDED TO FUNDED BORROWERS I DON'T SEE HOW BORROWER MOTIVATION RELATES TO THIS; IF YOU'RE DOING THAT, MAKE IT EXPLICIT HERE.
 
 ## Setup
 
 ### Importing required libraries
 
 Before we dive into the analysis, we need to import all the required packages. We can use various packages to analyze text data. In this analysis, the packages we have used are:
+
+"WE CAN USE VARIOUS" IS NOT VERY INFORMATIVE - WHY DID YOU CHOOSE THE ONES YOU DID? WHAT KINDS OF TEXT ANALYSIS DO THEY PERFORM? WHAT ARE THE DIFFERENT KINDS OF TEXT ANALYSIS IN GENERAL?
 
 ```{r libraries, warning=FALSE, echo=TRUE, message=FALSE}
 #text analysis packages
@@ -49,10 +53,14 @@ options(readr.show_col_types = FALSE)
 
 ### Reading the data
 
-We use the `lender_loans.csv` file for our analysis. We import these files using the `read_csv` function. We take a look at the data to get an idea of what columns of our interest look like. The columns of interest to us are:
+We use the `lender_loans.csv` file for our analysis. The columns of interest to us are:
 
--   `loan_because` : Lenders can mention the reason or their motivation for lending
--   `use` : Borrowers specify what they will use the loan money for
+-   `loan_because` : free response indicating lender's reason for lending
+-   `use` : free response indicating a borrower's intended use (more flexible than "sector")
+
+I TRIED TO MAKE THESE SOUND A LITTLE MORE PRECISE, BUT MAKE SURE THEY'RE CORRECT
+
+WHAT PROPORTION OF VALUES ARE MISSING? ARE YOU MAKING ANY ASSUMPTION ABOUT MISSINGNESS IN YOUR ANALYSIS? MISSING AT RANDOM? IMPORTANT TO MENTION THAT HERE
 
 *The data set presented below is a subset of columns from the actual data*
 
@@ -69,7 +77,11 @@ knitr::kable(X, "pipe")
 
 ## Analysis
 
-We analyse the text from both Lenders and Borrowers perspectives. Through the lenders text field we can identify what are the most common words used by lenders when citing reasons for lending. Through the borrower's text field, the most common words used can give us an insight into what the loans are most commonly used for. We could further try to relate this with loan amount or number of lenders and see whether the use of certain words could drive a lender to lend or whether the use of some words help a loan to get funded versus common words used in loans that do not get funded.
+We analyse the text from both Lenders and Borrowers perspectives. From the lender text field we identify the most common words used by lenders when citing reasons for lending; from the borrower text field, the most common words used can give us an insight into what the loans are typically used for. We could further try to relate this with loan amount or number of lenders and see whether the use of certain words could drive a lender to lend or whether the use of some words help a loan to get funded versus common words used in loans that do not get funded.
+
+COULD YOU OR DO YOU? MAKE IT MORE CLEAR FROM THIS WHAT ANALYSIS YOU ACTUALLY DO
+
+TREAT THIS AS AN INTRODUCTION AND PROVIDE A SUMMARY OF WHAT YOU WILL DISCUSS IN THIS SECTION: CORPUS CREATION, DATA CLEANING, LEMMATIZATION, VISUALIZATION, ETC.
 
 ### Lenders
 
@@ -77,13 +89,15 @@ We analyse the text from both Lenders and Borrowers perspectives. Through the le
 
 #### Creating a corpus
 
-To start with the text analysis, we start with cleaning the columns that contain our text data. We convert it to a corpus - which is a format used for text analysis. This also makes the text analysis using the `tm` package easier.
+Now that we've identified the relevant data, the first step towards text analysis is to clean the data and convert it to a corpus - a format used for text analysis, and the format most convenient for the $\texttt{tm}$ package which will be using.
 
-On a closer look at the data, we can observe that there are multiple special characters present which are not recognized by the typical `UTF-8` encoding of the file. Therefore we first encode the field using `latin1` encoding so that it can recognize these special characters.
+Upon first inspection, we observe multiple special characters present which are not recognized by the typical `UTF-8` encoding of the file. Therefore we first encode the field using `latin1` encoding so that it can recognize these special characters.
 
 We also observe that each line in our data frame does not represent a unique lender or their reason for lending. We need these values to be unique so that the frequency of a specific word is not misrepresented. If that specific lender has multiple observations in the dataset, their reason for lending will reappear multiple times as well. This will sway the frequency of the words used and will not give us an accurate picture of the most common words.
 
-We subset our data frame to only contain the unique `lender_ids` and their corresponding reasons to lend captured in the column `loan_because`.
+DEPENDS HOW YOU DEFINE ACCURATE - THIS WOULD GIVE YOU THE MOST COMMON REASON ON A LOAN-WEIGHTED BASIS, WHICH SEEMS NOT UNREASONABLE. IT'S OKAY IF YOU PREFER TO JUST COUNT EACH LENDER ONCE, BUT IT'S NOT CLEAR THAT ONE WAY IS MORE CORRECT THAN THE OTHER.
+
+We subset our data frame to only contain the unique `lender_ids` and their corresponding reasons fir lending as captured in the column `loan_because`.
 
 ```{r corpus, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
 # To recognize special characters
@@ -99,7 +113,7 @@ corpus <- Corpus(VectorSource(as.vector(loan_bec$loan_because)))
 
 #### Data Transformation
 
-Once we have created our corpus, we transform our data. This mainly includes the following steps:
+Once we have created our corpus, we transform our data via the following steps:
 
 1.  Removing all special characters and punctuation
 
@@ -109,7 +123,7 @@ Once we have created our corpus, we transform our data. This mainly includes the
 
 4.  Removing extra white spaces
 
-5.  Removing stop words. Stop words refer to common words used in text which do not add any contextual value. For example: 'a','the','as' etc.
+5.  Removing "stop words." Stop words refer to common words used in text which do not add any contextual value. For example: 'a','the','as', etc.
 
 By performing these steps, we are able to get rid of the 'noise' in the data. For example, by converting to lowercase it helps to keep the data consistent for analysis. By removing stop words it helps to focus mainly on key words present in the text which are relevant to us.
 
@@ -139,7 +153,11 @@ corpus <- tm_map(corpus, stripWhitespace)
 
 #### Lemmatization
 
-Lemmatization is a method used in text analysis to get the root of the word. It is a form of normalizing the data using vocabulary and morphological analysis. For example, in our data we may have the words "helping" and "helped". With the help of lemmatization we will be able to transform these words to their base form i.e. "help". Another method to do this is Stemming, however with stemming we only get the base word whereas lemmatization helps to retain the context of the word as well.
+Lemmatization is a method used in text analysis to extract the root of each word in the corpus. It is a form of normalizing the data using vocabulary and morphological analysis. For example, in our data we may have the words "helping" and "helped". Lemmatization transforms both words to their root word, "help". Another method to do this is Stemming, however with stemming we only get the base word whereas lemmatization helps to retain the context of the word as well.
+
+DIFFERENCE BETWEEN LEMMATIZAITON AND STEMMING IS UNCLEAR FROM YOUR DESCRIPTION. HOW DOES LEMMATIZATION RETAIN CONTEXT?
+
+YOU SHOULD PROBABLY INTRODUCE THE WORD DICTIONARY AT SOME POINT, POSSIBLY IN A BRIEF INTRO TO TEXT ANALYSIS.
 
 ```{r lemming, echo=TRUE, results='hide', message=FALSE, warning=FALSE }
 #Lemmatization
@@ -148,9 +166,11 @@ corpus <-tm_map(corpus, lemmatize_strings)
 
 #### Word Frequency Matrix
 
-This is a simple way to compare all the terms or words in our data with their respective frequency. Here each row represents a word and each column represents the index number of the observations in our data frame. Each cell in the matrix are integer values that represent the frequency of the word in the respective rows. We then sum these columns, to get a total frequency of each word.
+Now that the data is prepared, we begin our analysis with a word frequency matrix, which displays the frequency of occurrence for each word in our dictionary. Each row represents a word and each column represents the number of times that word occurs in our data frame. Each cell in the matrix are integer values that represent the frequency of the word in the respective rows. We then sum these columns, to get a total frequency of each word.
 
-We are interested in the most common words used by lenders. For this analysis we only look at the raw count of each term, however one can assign weights or normalize each row based on the frequency of the word to perform other type of calculations. We sort the matrix in descending order to obtain these words. We also convert the matrix to a data frame so that it is easier to read and visualize.
+THIS DESCRIPTION SEEMS UNNECESSARY TO ME AND POSSIBLY EVEN CONFUSES THINGS. HEAD A PORTION OF THE MATRIX HERE IF YOU THINK IT'S WORTH EXPLAINING, OTHERWISE JUST KEEP THE FIRST SENTENCE.
+
+For this analysis we consider only the raw count of each term, however alternative weighting and normalization schemes are possible in the package as well. We convert the matrix to a data frame for ease of manipulation and sort it in terms of decreasing frequency.
 
 ```{r matrix, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
 # Build a term-document matrix
@@ -171,7 +191,9 @@ dtm_d <- data.frame(word = names(dtm_v),freq=dtm_v)
 
 **Bar Chart of top 10 most frequent words**
 
-Once we have our word frequency data frame we can visualize it. First we plot a bar chart to see the 10 most frequent words used by lenders along with their frequency.
+Once we have our word frequency data frame we can visualize it. First we plot a bar chart to see the 10 most frequent words used by lenders along with their frequency. From our bar chart we see that the most commonly used word is *help*, with a frequency of 869, which is nearly twice that of the next most commonly used word, *people* . This suggests that an altruistic desire to help developing nation entrepreneurs may be a significant motivation for Kiva lenders.
+
+ARE ALL BORROWERS ACTUALLY FROM DEVELOPING NATIONS?
 
 ```{r barchart, echo=TRUE, fig.align='center',warning=FALSE}
 # Plot the most frequent words
@@ -185,11 +207,9 @@ ggplot(dtm_d[1:10,])+ aes(x = reorder(word, -freq), y=freq)+
 
 ```
 
-From our bar plot we can see that the most common word used is *help*, with a frequency of 869. The word *help* has close to double the frequency as compared to the next most commonly used word *people* . We could conclude that most lenders choose to lend in order to help entrepreneurs from developing nations.
-
 **Word Cloud**
 
-A word cloud is visual representation of words in the form of a cluster where the size of the word represents its frequency. For our word cloud, we plot all the words in the dataset which have a minimum frequency of 5. The results are not too different from the bar chart but this is a different way of analyzing text data and we also get to see more words that were used by the lenders for their motivation for lending
+A word cloud is visual representation of words in the form of a cluster where the size of the word represents its frequency. For our word cloud, we plot all the words in the data set which have a minimum frequency of 5. While the interpretation is similar to the that of the bar chart, this alternative visualization allows us to see more words than could reasonably fit in a bar chart.
 
 ```{r wordcloud, echo= TRUE, fig.align='center'}
 set.seed(1234)
@@ -200,13 +220,15 @@ wordcloud(words = dtm_d$word, freq = dtm_d$freq, min.freq = 5,
 
 This concludes our analysis of the `loan_because` column. We looked at our data from the Lender's perspective and observed that most common word used is **help**, as is evident from the bar chart as well. However, from the word cloud we can also observe that most of the words used by lenders seem to be in the sphere of helping people, indicating that lenders sign up to Kiva provide support and be of service to entrepreneurs in developing countries.
 
-### Borrowers
+GET MORE SPECIFIC, THIS SHOULD BE LONGER. TRY TO INTERPRET A LITTLE MORE DEEPLY, THIS IS BASICALLY THE CULMINATION OF ALL OF YOUR TEXT ANALYSIS
+
+### Borrower text analysis
 
 ------------------------------------------------------------------------
 
-Next, we look at what were the most common words used by borrowers that may have motivated lenders to lend to them. To narrow down our analysis, we further separate our loans into two classes - funded and not funded. We further analyze if there is a trend in the words used by the borrowers whose loans get funded versus borrowers whose loans did not.
+Next, we look for systematic differences in the words used by funded and non-funded borrowers when describing their intended use for the loans. This may suggest lender preferences and motivations. In this portion of the analysis, we rely on the `status` column, which indicates the current status of the loan, as well as the `use` column, which indicates the borrower's intended use for the requested loan amount.
 
-Our data contains a `status` column which indicates the current status of the loan. First we look at the unique values in this column and the number of loans associated with each respectively. Further, we use these values to create an indicator variable for whether a loan has been funded or not.
+To get a better idea of how many loans are funded, we look at the unique values in the `status` column and the number of loans associated with each value. Further, we use these values to create an indicator variable for whether a loan has been funded or not.
 
 ```{r status, echo= TRUE, messgae = FALSE}
 
@@ -216,6 +238,8 @@ kiva_ll %>%
   summarize(count = length(unique(loan_id)))
 ```
 
+FORMAT THIS AS A NICE TABLE LIKE YOU DO BELOW. COMMENT ON THE DISTRIBUTION OF FUNDED VERSUS NONFUNDED, ETC.
+
 The status column contains 7 unique values. We look at the data dictionary and Kiva website to get a better idea of what each term means. Based on that we make the classification of these terms to our 2 classes funded and not-funded:
 
 -   Funded: $\texttt{funded, in_repayment, paid}$
@@ -223,6 +247,8 @@ The status column contains 7 unique values. We look at the data dictionary and K
 -   Not Funded: $\texttt{expired, fundraising}$
 
 -   We do not include the loans associated with the status $\texttt{defaulted}$ and $\texttt{refunded}$ in our analysis since they do not clearly fall in either of the classes we have created \*
+
+HOW DID YOU DECIDE TO CLASSIFY THESE - JUST WRITE A SENTENCE FOR EACH FUNDED AND NON-FUNDED. I WOULD THINK DEFAULTED AND REFUNDED SHOULD ACTUALLY GO IN THE FUNDED CATEGORY - TO DEFAULT OR REFUND YOU HAVE TO GET A LOAN IN THE FIRST PLACE. AND I'LL WE'RE INTERESTED IN IS THE MOMENT WHEN LENDERS DECIDE TO FUND ONE BORROWER RATHER THAN ANOTHER - WHAT HAPPENS TO THE LOAN AFTER THAT IS IRRELEVANT.
 
 ```{r funding indicator,echo= TRUE, message = FALSE}
 
@@ -308,7 +334,9 @@ notfunded_dtm_d <- data.frame(word = names(notfunded_dtm_v),freq=notfunded_dtm_v
 
 **Bar Chart**
 
-First we plot two bar charts to visualize and compare the top 10 most frequently used words by borrowers whose loan have been funded and not funded.
+First we plot two bar charts to visualize and compare the top 10 most frequently used words by borrowers whose loans have been funded and not funded.
+
+COMMENT ON THESE BAR CHARTS: I SEE RICE, SUPPLIES, MERCHANDISE ON FUNDED BUT NOT FUNDED AND FOOD, CAPITAL, NEW ON NOT FUNDED BUT NOT FUNDED. THOSE FUNDED WORDS ARE MORE SPECIFIC TO ME, MAYBE LENDERS PREFER MORE SPECIFICITY. THEY WANT A BORROWER WHO HAS A CONCRETE PLAN, THEY DON'T WANT THEIR MONEY WASTED. KIND OF A REACH, BUT STARE AT THE DATA A LITTLE MORE AND TRY TO SAY SOMETHING. X-AXIS TEXT IS TOO SMALL, COULD ALSO ROTATE TEXT 45 OR 90 DEGREES OR DO AN AXIS FLIP. TITLE FORMAT IS A LITTLE AWKWARD WITH THE BRACKETS
 
 ```{r borrower barchart, echo=FALSE, out.width="50%", warning=FALSE, fig.show='hold'}
 # Plot the most frequent words
@@ -330,9 +358,15 @@ ggplot(notfunded_dtm_d[1:10,])+ aes(x = reorder(word, -freq), y=freq)+
 
 ```
 
+TABLE VARS SHOULD BE FORMATTED LIKE WORDS, NO UNDERSCORES
+
 **Word Cloud**
 
-Similar to the bar charts we create two word clouds, one representing the most common words used by the borrowers whose Loans have been funded and the other representing loans that did not get funded. We plot all the words in the dataset which have a minimum frequency of 5. The results are not too different from the bar chart but this is a different way of analyzing text data and we also get to see more words that were used by the lenders for their motivation for lending
+WHICH IS WHICH
+
+Similar to the bar charts we create two word clouds, one representing the most common words used by the borrowers whose Loans have been funded and the other representing loans that did not get funded. We plot all the words in the dataset which have a minimum frequency of 5. The results are not too different from the bar chart but this is a different way of analyzing text data and we also get to see more words that were used by the lenders for their motivation for lending.
+
+FIND AT LEAST ONE DIFFERENCE AND COMMENT ON IT.
 
 ```{r, echo=TRUE, header=FALSE, message = FALSE, }
 #Table to see no. of funded and not funded loans
@@ -364,6 +398,10 @@ From the bar chart we can see that the word with highest frequency is **buy** fo
 
 Based on the word cloud we also observe that there is not a lot of difference in the kinds of words used by borrowers who fall into the Funded class as opposed to those in the Not funded class. However, we must also factor in that the number of loans that belong to Funded class is much higher than the loans belonging to the Not Funded class (This can be seen from the table).
 
+HOW DOES THE NUMBER OF LOANS MATTER. FIND SOME DIFFERENCE TO COMMENT ON, EVEN IF IT'S MINOR
+
 ## Conclusion
 
-To conclude, we looked at free text fields from both borrowers and lenders perspective to understand motivations for lending. We also looked at a breakdown of Funded and Not funded loans for borrowers. We observed that Lender's are usually motivated by altruism and most commonly lend money to help developing nation entrepreneurs. When it comes to borrowers, we observe that most borrowers opt for loans in order to source raw materials or to purchase resources for their business or workplace. Our analysis to conclude whether there were specific words used by borrowers that may have helped them get funded was not entirely conclusive. The words used by each type of borrower are very similar which could be indicative of the fact that there are other factors at play when it comes to getting a loan funded.
+In this section, we analyzed free text fields containing quotes from both lenders and borrowers to understand what motivates lenders. We observed that lenders are usually motivated by altruism and most commonly lend money to help developing nation entrepreneurs. When it comes to borrowers, we observe that most borrowers seek out loans in order to source raw materials or to purchase resources for their business or workplace. We also looked at a breakdown of Funded and Not funded loans for borrowers. While the differences are not stark between funded and non-funded borrowers, we observe that \[ADD SOME SMALL DIFFERENCE YOU OBSERVE AND SAY WHAT IT MIGHT SUGGESTION ABOUT LENDER PREFERENCES AND HENCE MOTIVATION\]. The words used by each type of borrower are very similar which could be indicative of the fact that there are other factors at play when it comes to getting a loan funded. SUCH AS? LIST OTHER FACTORS
+
+CAREFUL WITH WORD CHOICE HERE: YOU CAN'T ACTUALLY OBSERVE LENDER MOTIVATION, WHAT YOU OBSERVE IS THAT THEIR SELF-REPORTRED REASON FOR LENDING OFTEN INVOLVES THE WORD HELP, AND THEN FROM THAT YOU COULD INFER...SAME FOR YOUR SENTENCE ABOUT BORROWERS, DISTINGUISH BETWEEN WHAT YOU ACTUALLY OBSERVE AND WHAT YOU ARE ASSUMING BASED ON THAT OBSERVATION.

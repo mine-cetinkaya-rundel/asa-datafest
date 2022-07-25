@@ -11,9 +11,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-In this section we focus on the first part of the prompt: understanding the motivations of lending among contributors to Kiva. Our approach here is suitable for students with limited statistical background: we first explore the general characteristics of borrowers, then we contrast the characteristics of funded borrowers to those of non-funded borrowers, using both descriptive statistics and hypothesis testing. Since lenders choose whom they fund, the results of this analysis will reveal the types of borrowers which lenders prefer, and may suggest motivations for lending.
+In this section we focus on the first part of the prompt, which asks us to analyze the motivations for lending among contributors to Kiva. Our approach here is suitable for students with limited statistical background: we first explore the general characteristics of borrowers, then we contrast the characteristics of funded borrowers to those of non-funded borrowers, using both descriptive statistics and hypothesis testing. Since lenders choose whom they fund, the results of this analysis will reveal the types of borrowers which lenders prefer, and may suggest motivations for lending.
 
 An important caveat to this analysis is that the 2012 DataFest dataset is not an exhaustive record of all Kiva borrowers, but a subset selected for the purposes of the competition. In order to proceed with our analysis, we must assume that the data provided is a representative sample. However, note that if this assumption is violated, i.e., if the data differs systematically from the full population of Kiva transactions due to seleciton bias, our inferences will not be valid.
+
+THIS CAVEAT SHOULD BE IN THE EDA OR GETTING STARTED SECTION TOO AND JUST REFERENCE IT AGAIN HERE AND EVERYWHERE ELSE.
 
 ## Setup
 
