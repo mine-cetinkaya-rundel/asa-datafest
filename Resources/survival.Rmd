@@ -12,11 +12,15 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 options(digits = 3)
 ```
 
-We are also interested in how the status of loan tends to change over time. We would use the `survival` package for survival analysis, which focuses on the expected duration of time until occurrence of an event of interest (in our case the repayment of loan). 
+Another way of approaching the question of what characteristics impact loan repayment is to utilize survival analysis, which permits us to retain more of the data rather than restricting our analysis to completed loans. We are also interested in how the status of loan tends to change over time. In this tutorial, we use the $\texttt{survival}$ package for survival analysis, which focuses on the expected duration of time until occurrence of an event of interest (in our case the repayment of loan).
+
+IT WOULD MAKE A LOT MORE SENSE TO MODEL TIME TO DEFAULT, SO THAT SURVIVORS ARE LOANS THAT NEVER DEFAULT. YOU NEED TO EXPLAIN CENSORING IN THIS PARAGRAPH.
 
 # Set Up
 
-We loaded the packages, read in the data set, and manipulated the data as we did in the frequentist logistic regression section [**here**](link to be added after embedded in the website)
+We load the packages, read in the data set, and manipulated the data as we did in the frequentist logistic regression section [**here**](link%20to%20be%20added%20after%20embedded%20in%20the%20website)
+
+YOU DO NOT DO THE SAME MANIPULATION AS IN THE FREQUENTIST SECTION. IN THE FREQUENTIST SECTION YOU RESTRICTED IT TO COMPLETED LOANS WHICH DOES NOT HAVE ANY CENSORING SO YOU DIDN'T NEED SURVIVAL ANALYSIS.
 
 ```{r}
 loans <- read.csv("data/loans.csv")
@@ -35,7 +39,7 @@ library(survminer)
 
 ## Calculating Survival Times
 
-We computed a new variable `span`, which is the time between when the loan is funded and when the loan is paid back, and stored it in a new data set `ds`. 
+We computed a new variable `span`, which is the time between when the loan is funded and when the loan is paid back, and stored it in a new data set `ds`.
 
 ```{r}
 ds <- loans %>% 
@@ -54,8 +58,7 @@ ds <- loans %>%
 
 ## Fitting Survival Curves
 
-The `surv()` function takes the variables `span` and `status` as input and creates an object which serves as the input of `survfir()` function. We first created a simple survival curve that doesn’t consider any different groupings, by specifying just an intercept (~1) in the formula in `survfit()` function.
-
+The `surv()` function takes the variables `span` and `status` as input and creates an object which serves as the input of `survfir()` function. We first created a simple survival curve that doesn't consider any different groupings, by specifying just an intercept (\~1) in the formula in `survfit()` function.
 
 ```{r}
 surv <- survfit(Surv(span,status==1)~1, data = ds)
@@ -119,4 +122,8 @@ For numerical comparisons, we can use the `summary()` function to display the me
 summary(survfit(Surv(span,status==1)~sex, data = ds))$table
 ```
 
-The median time is 337 days for a male borrower or a male-only borrower group, 251 days for a female borrower or a female-only borrower group to fully repay the loan, and 165 days for a mixed-gender borrower group. There appears to be a shorter period to complete the loan repayment for mixed-gender borrower groups compared to single-gender borrower groups, and female borrowers tend to fully pay back their loans in a shorter time than male borrowers. This conclusion is consistent with our logistic model under the frequentist approach ([**here**](link to be added after embedded in the website)).
+The median time is 337 days for a male borrower or a male-only borrower group, 251 days for a female borrower or a female-only borrower group to fully repay the loan, and 165 days for a mixed-gender borrower group. There appears to be a shorter period to complete the loan repayment for mixed-gender borrower groups compared to single-gender borrower groups, and female borrowers tend to fully pay back their loans in a shorter time than male borrowers. This conclusion is consistent with our logistic model under the frequentist approach ([**here**](link%20to%20be%20added%20after%20embedded%20in%20the%20website)).
+
+SUMMARIZE YOUR LOGISTIC REGRESSION FINDINGS AGAIN IN CASE THEY FORGOT.
+
+YOU'RE DISCUSSING REGRESSION RESULTS LIKE DESCRIPTIVE STATISTICS. YOU COULD GIVE MEDIAN TIMES WITHOUT RUNNING ANY KIND OF MODEL. TRY TO FIND A TUTORIAL ON SURVIVAL ANALYSIS TO GET AN IDEA OF HOW TO INTREPRET COEFFICIENTS.
