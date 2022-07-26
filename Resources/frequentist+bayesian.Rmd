@@ -12,7 +12,11 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 options(digits = 3)
 ```
 
-ADD AN INTRODUCTION STATING WHAT PART OF THE PROMPT WE ARE CONSIDERING AND HOW YOU WILL DO IT. WHAT HAPPENED TO THE BAYESIAN PART?
+ADD AN INTRODUCTION STATING WHAT PART OF THE PROMPT WE ARE CONSIDERING AND HOW YOU WILL DO IT, i.e. Frequentist and Bayesian logistic regression
+
+Frequentism is statistical philosophy grounded in the interpretation of probability as the limit of its relative frequency in many trials. Probabilities can be found by a repeatable objective process. While a frequentist assumes that there are true values of the parameters of the model and computes the point estimates of the parameters, a Bayesian asserts that only data are real, and treats the model parameters as random variables whose uncertainty can be characterized by probability distributions.
+
+WHY WOULD YOU USE BAYESIAN? PRIOR KNOWLEDGE, ETC. JUSTIFY WHY YOU ARE PRESENTING BOTH APPROACHES.
 
 # Set Up
 
@@ -34,7 +38,7 @@ library(pROC)
 
 ## Data set
 
-Next, we read the data set we are performing our analysis on into the RStudio environment. The `read.csv()` function reads a CSV file in as a data frame.
+Next, we read the data set we are performing our analysis on into the RStudio environment.
 
 WHICH FILE ARE YOU USING AND WHY?
 
@@ -155,7 +159,7 @@ ggplot(d, aes(x = loan_amount, group = status)) +
 
 SAY WHAT THE 8 LEVELS ARE, DESCRIBE WHAT A MULTINOMIAL LOGISTIC MODEL IS AND WHY IT'S APPROPRIATE.
 
-The response variable that we would like to look at is the loan payment status, recorded in the `status` column of the `lender` file. This is a categorical variable with 8 levels, combining nonfunded, funded, incomplete and complete loans: STATE THE LEVELS. Intuitively, for a categorical response variable with at least three levels, one appropriate model would be a multinomial logistic regression. However, the interpretation of results is not as straightforward in such a model - and since the prompt is explicitly concerned with loan default, a more interpretable model would be one which dichotomizes the data to contrast defaulted and non-defaulted loans.
+The response of interest is loan payment status, recorded in the `status` column of the `lender` file. This is a categorical variable with 8 levels, combining non-funded, funded, incomplete and complete loans: STATE THE LEVELS. Intuitively, for a categorical response variable with at least three levels, one appropriate model would be a multinomial logistic regression. However, the interpretation of results is not as straightforward in such a model - and since the prompt is explicitly concerned with loan default, a more interpretable model would be one which dichotomizes the data to contrast defaulted and non-defaulted loans.
 
 To achieve this, we restrict the dataset to completed loans, which are either repaid or not repaid. With a binary response variable, we can utilize a binary logistic regression. Note that in transforming the data, we set the `status` variable to be 1 if the loan status is "paid" and 0 if it is "defaulted", such that the baseline level would be "defaulted".
 
@@ -184,9 +188,7 @@ The two most common link functions used for binomial GLMs are the logit and prob
 
 ## Frequentist Approach
 
-We fitted a general logistic regression model with "frequentist" approach. Frequentism is statistical philosophy grounded in the interpretation of probability as the limit of its relative frequency in many trials. Probabilities can be found by a repeatable objective process.
-
-TWO OPTIONS: CONTRAST THIS WITH BAYESIANISM AND DISCUSS A BAYESIAN ALTERNATIVE AND WHAT PACKAGES TO USE AND SAY YOU AREN'T DOING IT NOW FOR SIMPLICITY. OR JUST CUT THIS OUT.
+We first fit the logistic regression model using a Frequentist approach.
 
 ### Variable Selection
 
@@ -333,16 +335,18 @@ Based on our analysis, loan amount seems not to be a factor affecting the loan r
 
 ## Bayesian Approach
 
-While a frequentist assumes that there are true values of the parameters of the model and computes the point estimates of the parameters, a Bayesian asserts that only data are real, and treats the model parameters as probability distributions which are to be inferred.
-
-The four steps of a Bayesian analysis are:
+Next, we implement an alternative to the model above using a Bayesian approach. The four steps of a Bayesian analysis are:
 
 1)  Specify a joint distribution for the outcome(s) and all the unknowns, which typically takes the form of a marginal prior distribution for the unknowns multiplied by a likelihood for the outcome(s) conditional on the unknowns. This joint distribution is proportional to a posterior distribution of the unknowns conditional on the observed data
 2)  Draw from posterior distribution using Markov Chain Monte Carlo (MCMC).
 3)  Evaluate how well the model fits the data and possibly revise the model.
-4)  Draw from the posterior predictive distribution of the outcome(s) given interesting values of the predictors in order to visualize how a manipulation of a predictor affects (a function of) the outcome(s).
+4)  Draw from the posterior predictive distribution of the outcome(s) given interesting values of the predictors in order to visualize how a manipulation of a predictor effects (a function of) the outcome(s).
 
-To run this model using Bayesian estimation, we can use the `rstanarm` package. This package wraps Stan code for common regression models. In contrast with the frequentist procedure, in Bayesian estimation we need to specify priors for our parameters. The `rstanarm` function equivalent of g`lm()` is `stan_glm()`, which supports every link function that `glm()` supports. Rather than generate point estimates and a covariance, Stan instead **simulates draws from the posterior distribution of our parameters** using a sophisticated algorithm called Hamiltonian Monte Carlo. Stan output is a matrix in which each row is a simulated draw from the posterior and each column is a parameter (or function of parameters). With `stan_glm()`, binomial models with a logit link function can typically be fit slightly faster than the identical model with a probit link because of how the two models are implemented in Stan. In the following code, we simply specify the chosen link, and set priors for the intercept and the predictor coefficients.
+CORRECT 2., YOU DON'T ALWAYS HAVE TO USE MCMC, E.G. CONJUGATE PRIORS. ARE THESE STEPS QUOTED FROM SOMEWHERE? IF SO CITE.
+
+To fit our model, we will use the same data split as in the Frequentist analysis above.
+
+IS THERE SOME REASON YOU NEED TO RELOAD THE DATA AND RESPLIT THE DATA? IT WOULD BE BETTER TO USE THE SAME SPLIT AS ABOVE. DELETE DATA SPLITTING IF THAT WORKS.
 
 ### Data Splitting
 
@@ -360,7 +364,17 @@ load("data/post0.Rdata")
 
 ### Model Fitting
 
+To implement our Bayesian logistic model, we utilize an algorithm known as Hamiltonian Monte Carlo. In particular, we use the program Stan, via its $\texttt{R}$ interface in the $\texttt{rstanarm}$ package.
+
+FIX ALL OF YOUR PACKAGE TEXT- THIS IS THE THIRD TIME I'VE HAD TO ASK THIS, FIXING THE FIRST TWO FOR YOU HERE BUT PLEASE CHECK THE REST OF YOUR DOCUMENT. WHAT ARE YOUR PRIORS? IT'S ODD TO SAY THAT YOU NEED TO SELECT THEM AND THEN NOT MENTION HOW YOU SELECT THEM. IF YOU USE DEFAULT PRIORS LOOK UP WHAT THEY ARE AND MENTION IT. SHOW HOW TO VIEW THE PRIORS FOR A MODEL using prior_summary()
+
+The `rstanarm` equivalent of g`lm()` is `stan_glm()`, which supports every link function that `glm()` supports. Rather than generate point estimates and a covariance, Stan instead **simulates draws from the posterior distribution of our parameters**. The Stan output is a matrix in which each row is a simulated draw from the posterior distribution OF WHAT and each column is a parameter (or function of parameters). With `stan_glm()`, binomial models with a logit link function can typically be fit slightly faster than the identical model with a probit link.
+
+Note that in contrast with the Frequentist procedure, in Bayesian estimation we need to specify priors for our parameters, which permit us to incorporate existing knowledge of the parameters into our model. In this case.... FINISH SENTENCE
+
 In the following code, we specified the chosen link, and set priors for the intercept and the predictor coefficients.
+
+WHY ARE YOU USING NORMAL (0,1)? WHAT IS THE SCALE OF THE PREDICTORS? THAT COULD BE VERY INFORMATIVE. MAYBE NOT BUT YOU NEED TO JUSTIFY IF YOU ARE USING SOMETHING OTHER THAN THE DEFAULT PRIORS (WHICH SCALE THE PREDICTORS TO GET AROUND THIS)
 
 ```{r eval=FALSE}
 post1 <- stan_glm(status ~ loan_amount + sector + posted_yr + continent + sex, data = d1,
@@ -371,17 +385,27 @@ post1 <- stan_glm(status ~ loan_amount + sector + posted_yr + continent + sex, d
                  cores=3, chains = 3,warmup = 500,iter = 1200)
 ```
 
-Here's the output of the model:
+We can view the output of the model here:
 
 ```{r}
 post1
 ```
 
-It includes the point estimates (median) as well as the uncertainty estimates (median absolute deviation) for coefficients of all predictors. Here, the coefficients differ from those in the previous model with frequentist approach: again we can notice that the median estimate for `loan_amount` is 0.0 with a median absolute deviation of 0.0, indicating no relationship between loan amount and the loan status; the loans in the "Health" sector become the most likely to be repaid, and loans in the "Services" sector is become the least likely to be repaid. Together with Oceania, Europe now has the same highest odds ratio for the loan being repaid while Africa still has the lowest odds ratio. Contrary to what our frequentist model suggests ([**here**](link to be added after embedded in the website)), a borrower group that consists of both males and females has the lowest odds ratio of repaying the loan, and a female borrower or a female-only borrower group generally has lower odds ratio of repaying the loan than a male borrower or a male-only borrower group.
+YOU SAID ABOVE IT DOESN'T PRODUCE POINT ESTIMATES - CLARIFY.
+
+It includes the point estimates (median) as well as the uncertainty estimates (median absolute deviation) for coefficients of all predictors. Here, the coefficients differ from those in the previous model with frequentist approach: again we can notice that the median estimate for `loan_amount` is 0.0 with a median absolute deviation of 0.0, indicating no relationship between loan amount and the loan status; the loans in the "Health" sector become the most likely to be repaid, and loans in the "Services" sector is become the least likely to be repaid. Together with Oceania, Europe now has the same highest odds ratio for the loan being repaid while Africa still has the lowest odds ratio. Contrary to what our frequentist model suggests ([**here**](link%20to%20be%20added%20after%20embedded%20in%20the%20website)), a borrower group that consists of both males and females has the lowest odds ratio of repaying the loan, and a female borrower or a female-only borrower group generally has lower odds ratio of repaying the loan than a male borrower or a male-only borrower group.
+
+FIX THIS DISCUSSION, SAME FEEDBACK AS ABOVE FOR FREQUENTIST
+
+ADD DISCUSSION OF CREDIBLE INTERVALS AND DEFINE, SINCE YOU USE THE CONCEPT BELOW.
 
 ### Model Parameter Visualization
 
-Next, we drew a caterpillar plot, which displays the median and estimate interval for all the coefficients sorted by their medians so that we can get a closer look at which variables are expected to have greater effects on the response variable. First, we sorted the predictor variables in our model `post1` by coefficients. To do this, we extracted the `coefficient` element from `post1` and converted it into a data frame which had only one column "post1.coefficients". We then sorted the rows based on the value of the coefficients. Next, we extracted the row names except for the first row (the intercept) and stored it for use in drawing the caterpillar plot.
+In order to get an idea of which variables are associated with changes in the probability of repayment, we draw a caterpillar plot, which displays the median and estimate interval for all the coefficients.
+
+First, we sort the predictor variables in our model `post1` by coefficients. SORT BY POSTERIOR MEDIAN OF COEFFICIENTS? THIS IS UNCLEAR. To do this, we extracted the `coefficient` element from `post1` and converted it into a data frame which had only one column "post1.coefficients". We then sorted the rows based on the value of the coefficients. Next, we extracted the row names except for the first row (the intercept) and stored it for use in drawing the caterpillar plot. CONFUSING AND WORDY, TIGHTEN THIS UP. ARE YOU SORTING THE POSTERIOR DRAWS OR A POINT ESTIMATE?
+
+This caterpillar plot is created by the `mcmc_intervals()` function in the `bayesplot` package. It plots the 95% uncertainty intervals computed from posterior draws with all chains merged.
 
 ```{r}
 # extract the coefficients and sort them in ascending order
@@ -395,8 +419,6 @@ order <- rownames(coef)[-1]
 cate <- mcmc_intervals(as.matrix(post1), pars = order, prob = 0.95, prob_outer = 1)
 cate
 ```
-
-This caterpillar plot is created by the `mcmc_intervals()` function in the `bayesplot` package. It plots the 95% uncertainty intervals computed from posterior draws with all chains merged. The intervals are sorted by the median of each coefficient, and the ordering gives us a more direct sense of which variables have greater effects on the loan repayment status.
 
 ### Model Evaluation
 
@@ -429,14 +451,14 @@ preds <- posterior_linpred(post1, transform=TRUE)
 pred <- colMeans(preds)
 ```
 
-We calculate these posterior predictive probabilities in order to determine the classification accuracy of our model. If the posterior probability of paying back the loan for an borrower is greater or equal to 0.5, then we would predict that observation to be a repaid loan (and similarly for less than 0.5). For each observation, we can compare the posterior prediction to the actual observed value. The proportion of times we correctly predict an individual (i.e. [prediction = 0 and observation = 0] or [prediction = 1 and observation = 1]) is our classification accuracy.
+We calculate these posterior predictive probabilities in order to determine the classification accuracy of our model. If the posterior probability of paying back the loan for an borrower is greater or equal to 0.5, then we would predict that observation to be a repaid loan (and similarly for less than 0.5). For each observation, we can compare the posterior prediction to the actual observed value. The proportion of times we correctly predict an individual (i.e. \[prediction = 0 and observation = 0\] or \[prediction = 1 and observation = 1\]) is our classification accuracy.
 
 ```{r}
 pr <- as.integer(pred >= 0.5)
 round(mean(xor(pr,as.integer(d1$status==0))),3) #classification accuracy
 ```
 
-We should also evaluate the classification accuracy of our model on unseen data to see whether it is generalized or overfitting. This can be done by using a test dataset or via a LOOCV approach. Since we've talked about the former approach in the frequentist section ([**here**](link to be added after embedded in the website)), in this section we would use the latter to illustrate the function `E_loo()`, which uses importance weights generated from the `loo()` function.
+We should also evaluate the classification accuracy of our model on unseen data to see whether it is generalized or overfitting. This can be done by using a test dataset or via a LOOCV approach. Since we've talked about the former approach in the frequentist section ([**here**](link%20to%20be%20added%20after%20embedded%20in%20the%20website)), in this section we would use the latter to illustrate the function `E_loo()`, which uses importance weights generated from the `loo()` function.
 
 ```{r}
 ploo = E_loo(preds, loo1$psis_object, type = "mean", log_ratios = -log_lik(post1))$value
@@ -481,3 +503,4 @@ save(post1, file = "data/post1.RData")
 save(post0, file = "data/post0.RData")
 ```
 
+WHERE IS YOUR CONCLUSION? COMPARE THIS TO FREQUENTIST. DO YOU USE YOUR DATA SPLITTING?
