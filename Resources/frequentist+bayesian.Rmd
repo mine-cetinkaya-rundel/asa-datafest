@@ -1,5 +1,5 @@
 ---
-title: "Frequentist Logistic Regression"
+title: "Logistic Regression"
 output:
   html_document:
     toc: true
