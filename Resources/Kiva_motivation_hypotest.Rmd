@@ -6,7 +6,6 @@ output:
   html_document:
     toc: true
     toc_float: true
-    
 ---
 
 ```{r setup, include=FALSE}
@@ -17,15 +16,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 In this section we focus on the first part of the prompt, which asks us to analyze the motivations for lending among Kiva contributors to developing nation entrepreneurs. Our approach here is suitable for students with limited statistical background: we first explore the general characteristics of borrowers, then we contrast the characteristics of funded borrowers to those of non-funded borrowers, using both descriptive statistics and hypothesis testing. Since lenders choose whom they fund, the results of this analysis will reveal the types of borrowers which lenders prefer, and may suggest motivations for lending.
 
-An important caveat to this analysis is that the 2012 DataFest dataset is not an exhaustive record of all Kiva borrowers, but a subset selected for the purposes of the competition. In order to proceed with our analysis, we must assume that the data provided is a representative sample. However, note that if this assumption is violated, i.e., if the data differs systematically from the full population of Kiva transactions due to selection bias, our inferences will not be valid.
-
 ## Setup
 
 Before we dive into the analysis, we need to import all the required packages. This includes packages for statistical analysis and visualization - many of which you will be familiar with from earlier sections.
 
 ### Importing the required packages
 
-The packages we have used in this walk through are:
+The packages we use in this walk through are:
 
 ```{r libraries, warning=FALSE, echo=TRUE, message=FALSE}
 library("ggplot2")
@@ -41,14 +38,22 @@ options(readr.show_col_types = FALSE)
 
 ### Reading the data
 
-We use the `lender loans` and `loans` files for this analysis. We import these files using the `read_csv` function. The `lender loans` file contains detailed loans and lender information with corresponding borrowers. The `loans` file has detailed borrower information and their respective loans, however this file does not contain any lender information. 
+We use the `lender loans` and `loans` files for this analysis. The `lender loans` file contains detailed loans and lender information with corresponding borrowers. The `loans` file has detailed borrower information and their respective loans, however this file does not contain any lender information.
 
-Our prompt focuses on motivations for lending to developing-nation entrepreneurs, therefore to incorporate development indicator we use data from world bank which helps to separate the borrowers' countries into low income and high income groups in the `lender loans` file. We perform this step using Microsoft excel and import the updated data set for the rest of our analysis
+REALLY WOULD BE BETTER TO SHOW HOW TO DO THIS IN R. LET'S GO OVER IT IN MEETING TODAY.
+
+Our prompt relates to motivations for lending to developing-nation entrepreneurs, therefore to focus on the appropriate borrowers we subset our data. While the term "developing nation" is not clearly defined, we use data from world bank to separate the borrowers' countries into low income and high income groups in the `lender loans` file. We perform this step using Microsoft excel and import the updated data set for the rest of our analysis
 
 ```{r input_data, echo=TRUE, warning=FALSE, results='asis'}
 
-#kiva_ll <- read_csv("data/lender_loans.csv")
-kiva_ll <- read_csv("data/lender_loans_with_wbi.csv") #lender loans updated with word bank indicators
+wdi <- read.csv("data/CLASS.csv", header = TRUE)
+kiva_l <- read_csv("data/lender_loans.csv")
+kiva_ll<- left_join(kiva_ll, wdi, by = c("location.country" = "Economy")) %>%
+
+  # FIX RENAME HERE
+
+kiva.countries <- unique(kiva_ll$location.country)
+
 kiva_loan <- read_csv(("data/loans.csv"))
 ```
 
@@ -56,8 +61,7 @@ kiva_loan <- read_csv(("data/loans.csv"))
 
 ### Descriptive Statistics
 
-We begin by getting an overview of the characteristics of all would-be borrowers, including their gender, sector, country, and requested loan amount. First we look at how the loan amount varies between high income and low income countries. From the bar chart below, we can observe that countries belonging to lower income group have received higher loans in terms of amount.
-
+We begin by getting an overview of the characteristics of all would-be borrowers, including their gender, sector, country, and requested loan amount. First we look at how the total amount of loans received varies between high income and low income countries using a bar chart. From this, we observe that countries belonging to lower income group receive the majority of loan funds.
 
 ```{r indicator , echo = TRUE, include= TRUE, results ='asis'}
 # Loan Amount Calculation
@@ -77,11 +81,13 @@ ggplot(income_group) +
 
 ```
 
-Keeping our prompt in mind, we subset our data to these low income countries and perform the rest of the analysis on that subset. Because we will ultimately be interested in differences between funded and non-funded borrowers, we add an indicator for borrower type and funding status to our data set. This will help improve our visualizations and communicate trends at these two levels. 
+Keeping our prompt in mind, we subset our data to these low income countries and perform the rest of the analysis on that subset.
 
 ```{r}
 kiva_ll <- kiva_ll %>% filter(income_indicator=="Low income")
 ```
+
+Because we are interested in differences between funded and non-funded borrowers, we add an indicator for borrower type (sex of the borrower: male, female, or group borrower) and funding status to our data set.
 
 **Borrower Type**
 
@@ -105,7 +111,6 @@ kiva_loan_sub <- kiva_loan_sub %>%
 ```
 
 After creating the indicator variable, we merge those values to the `lender_loans` data frame and check for NAs. This will help us verify if all the values in our left data frame have found corresponding values or not. For the purpose of this analysis we will drop any NAs in the data since it is not possible to obtain that information elsewhere.
-
 
 ```{r master df creation, echo = TRUE, warning=FALSE, results='hide', message=FALSE}
 
@@ -133,7 +138,9 @@ status %>% kbl(caption = "Value Counts of Status column") %>%
   kable_classic(bootstrap_options ="striped",full_width = F, html_font = "helvetica",position = "left")
 ```
 
-<br/> 
+<br/>
+
+FIX THIS TABLE: CAPITALIZE FIRST LETTER, USE PROPER TERMS RATHER THAN VARNAMES
 
 The status column contains 7 unique values. We look at the data dictionary and Kiva website to get a better idea of what each term means. Based on that we make the classification of these terms to our 2 classes funded and not-funded:
 
@@ -153,8 +160,7 @@ kiva_ll_funding <- kiva_ll_merged %>% mutate(funding_status = if_else(
 
 Once we have added our new indicator columns, we will use descriptive statistics to visualize these and identify trends,to gain some insight into borrower characteristics
 
-We look at the distribution of the funding status of loans among borrower types for various sectors.
-<!-- We will visualize this data in a tabular format since our data contains two categorical variables. -->
+We look at the distribution of the funding status of loans among borrower types for various sectors. <!-- We will visualize this data in a tabular format since our data contains two categorical variables. -->
 
 ```{r}
 
@@ -206,8 +212,9 @@ pie_chart_nonfunded <- pie_chart_nonfunded %>%
 
 ```
 
-This table gives us a snapshot of how the proportions of funded and not funded loans are distributed among sectors. The food sector has the highest proportion of loans that have been funded (26.1%) whereas among not funded loans, the highest proportion is in the Retail sector (24.8%). We can further investigate how this varies with respect to borrower type through a bar chart.
+WHAT TABLE? I DON'T SEE A TABLE. I DON'T UNDERSTAND WHAT YOUR X-AXIS IS HERE.
 
+This table gives us a snapshot of how the proportions of funded and not funded loans are distributed among sectors. The food sector has the highest proportion of loans that have been funded (26.1%) whereas among not funded loans, the highest proportion is in the Retail sector (24.8%). We can further investigate how this varies with respect to borrower type through a bar chart.
 
 ```{r, echo = TRUE, message = FALSE, warning=FALSE, results='asis'}
 
@@ -229,7 +236,7 @@ ggplot(funded_sec) +
   labs(fill = "Borrower Type")
 
 
-# Not Funded by borrower type
+# Not Funded by borrower type REMOVE THIS ONE
 
 nonfunded_sec <- loan_nonfunded %>% group_by(sector, bor_type) %>% 
   summarize(loan_count = length(unique(loan_id)))
@@ -248,10 +255,13 @@ ggplot(nonfunded_sec) +
 
 ```
 
+THE ABOVE CHART: REMOVE BORROWER TYPE. LET'S JUST FOCUS ON SECTOR , SO WE WANT TO PLOT PROPORTION OF FUNDED LOANS FOR EACH SECTOR. EX: WHOLESALE FUNDED LOANS = \# FUNDED WHOLESALE LOANS/ #(FUNDED + UNFUNDED WHOLESALE LOANS)
+
+UPDATE: IT MIGHT JUST BE A HEADING ERROR. KEEP THE ONE THAT HAS LOAN AMOUNTS, REMOVE THE OTHER.
+
 From this chart we can observe that women tend to have the highest proportion of funded loans in approximately every sector. For not funded loans individual female borrowers seem to share the lowest proportion. This suggests that lenders are more inclined to fund an individual borrower than male or groups.
 
 We have looked at how the proportion of loans varies, next we look at how the average loan amount varies across sectors, for our indicators. Since the number of borrowers is not evenly distributed across types in our data, looking at the average loan amount helps to make the comparisons more material.
-
 
 ```{r avg loan, echo=TRUE, message=FALSE, warning=FALSE, results='asis'}
 
@@ -296,6 +306,8 @@ ggplot(percap_nonfunded_sec) +
   coord_flip()+
   labs(fill = "Borrower Type")
 ```
+
+REALLY? THAT'S NOT WHAT I'M SEEING WHEN I LOOK AT THAT CHART. MEN HAVE A HIGHER LOAN AMOUNTS IN EVERY SECTOR UNLESS I'M READING IT WRONG.
 
 Similar to the proportion chart, we see that for funded loans, female borrowers have a significantly higher average loan amount when compared to other borrowers. Female borrowers have the highest average loan amount in the Retail and Food sector. Male borrowers have a higher average loan amount to females in Manufacturing, Transportation and Construction sectors. For not funded loans, the highest average loan amount is dominated by male borrowers. This reiterated the suggestion that lenders are motivated to lend to female borrowers.
 
@@ -342,18 +354,19 @@ Similar to the proportion chart, we see that for funded loans, female borrowers 
 
 ```
 
-
-From the plot above we can see that Uganda recieved the total loan amount 
+From the plot above we can see that Uganda recieved the total loan amount
 
 We have looked at the borrower characteristics visually through our graphs and descriptive statistics. We now use Hypothesis Testing to further analyze our data.
 
 ### Hypothesis Testing
 
-Hypothesis testing is a statistical inference method used to test an assumption about the data or more specifically the population parameters. To understand our lender motivations we will test several hypotheses. 
+Hypothesis testing is a statistical inference method used to test an assumption about the data or more specifically the population parameters. To understand our lender motivations we will test several hypotheses.
 
 First, we are interested in understanding how individual loans differ based on the gender of the applicant. The total loan amount is biased by the number of borrowers i.e. the number of female and group borrowers is much larger than the male borrowers, therefore we look at the average loan amount per borrower. To keep the analysis simple we subset our data to only Male and Female borrowers and test our hypothesis using a two-sample t-test. A t-test is a statistical test that compares the means of two samples. By subsetting and calculating the average loan amounts, we are comparing sample means using t-test to check our hypothesis.
 
 Our null and alternative hypothesis are:
+
+DO A ONE-SIDED TEST INSTEAD BECAUSE YOUR HYPOTHESIS IS THAT WOMEN GET HIGHER AVERAGE LOANS, AND MORE OF THE LOANS
 
 $H_{0} :$ $\texttt{The true difference between the average loan amount for Males and average loan amount for Females is equal to 0}$
 
@@ -368,6 +381,8 @@ Before we proceed with the t-test, we need to check some assumptions to ensure w
 -   The values are continuous. The loan amount is a continuous variable
 -   We assume that the data is normally distributed
 -   We assume that the variance for men and women is equal
+
+THE SAMPLE MEAN NEEDS TO FOLLOW A NORMAL DISTRIBUTION NOT THE DATA ITSELF, AND THAT IS REASONABLY ASSUMED VIA THE CLT. YOU CAN OMIT THE PLOTS BELOW. SIMILARLY, I THINK YOU CAN JUST HAND WAVE THE OTHER ASSUMPTIONS. NOT A GOOD USE OF SPACE SINCE THIS IS SUPPOSED TO BE A BEGINNER-APPROPRIATE TUTORIAL.
 
 We will also check the normality and variance assumption before proceeding with the test.
 
@@ -443,11 +458,19 @@ hyp <- t.test(female_loan,male_loan)
 hyp
 ```
 
+DEFINE P-VALUE/REMINDER
+
 Our p-value is less than the alpha value 0.05. This implies that it is statistically significant. A statistically significant p-value indicates strong evidence against our null hypothesis. Therefore, we reject the null hypothesis that there is no difference in the sample means of average loan amount of male and female borrowers.
 
-Now we look at the proportion of loans in the funded and non funded sector. Here we are interested in how the proportion of loans given to female borrowers differs between the funded and non funded category. We will be using a Z test to test two proportions.  A z-test is a hypothesis test in which the z-statistic follows a normal distribution. 
+Now we look at the proportion of loans in the funded and non funded sector. Here we are interested in how the proportion of loans given to female borrowers differs between the funded and non funded category. We will be using a Z test to test two proportions. A z-test is a hypothesis test in which the z-statistic follows a normal distribution.
 
 Our null and alternative hypothesis are:
+
+DO YOU MEAN DIFFERENCE BETWEEN IN H0? EVEN SO, THE RELEVANT QUESTION IS IF FEMALES ARE MORE LIKELY TO BE FUNDED THAN MALES, SO I WOULD DO:
+
+H0: THE PROPORTION OF FUNDED LOANS FOR FEMALES IS EQUAL TO THE PROPORTION OF FUNDED LOANS FOR MALES
+
+SO YOU WOULD WANT TO LOOK AT \# FUNDED FEMALES/ (# FUNDED + UNFUNDED FEMALES) VERSUS \# FUNDED MALES/ (# FUNDED + UNFUNDED MALES)
 
 $H_{0} :$ $\texttt{The true proportion of funded loans and not funded loans for female borrowers is equal to 0}$
 
@@ -478,10 +501,19 @@ Our test returns a p-value of less than 2.2e-16 which is less than the alpha val
 
 Lastly, we are interested in how the proportion of funded and not funded loans differ across sectors. For the purpose of this hypothesis test we will use the sector which has the highest number of loans - Food. We will use the same approach as the previous hypothesis test as we are comparing proportions. Our null and alternative hypothesis are:
 
+AGAIN, THIS SEEMS LIKE THE WRONG HYPOTHESIS, WE'RE INTERESTED IN THE PROBABILITY OF BEING FUNDED IN FOOD VERSUS AGRICULTURE (OR SOMETHING LIKE THAT). I'M NOT SEEING A CHART WHICH COMMUNICATES THIS CLEARLY, SO THAT WILL NEED TO BE CHANGED.
+
+AFTER YOU DO YOUR BAR CHART OF PROPORTION FUNDED BY SECTOR, PICK THE SECTOR WITH THE HIGHEST FUNDING RATE AND COMPARE TO THE SECTOR WITH THE LOWEST FUNDING RATE.
+
+H0: FUNDING RATE IN AG \[OR WHATEVER MOST LIKELY FUNDED SECTOR IS\] = FUNDING RATE IN RETAIL \[OR LOWEST FUNDED SECTOR\].
+
+FUNDING RATE = \# FUNDED IN SECTOR/ \# FUNDED + UNFUNDED IN SECTOR
+
+h1: AG \> RETAIL
+
 $H_{0} :$ $\texttt{The true difference in proportion of funded loans and not funded loans in the Food sector is equal to 0}$
 
 $H_{1}:$ $\texttt{The true difference in proportion of funded loans and not funded loans in the Food sector is not equal to 0}$
-
 
 ```{r}
 
@@ -503,13 +535,15 @@ prop.test(x = c(food_funded_loan_count,food_nonfunded_loan_count) , n = c(total_
 
 ```
 
+BETTER NOT TO USE SCIENTIFIC NOTATION, JUST SAY P\<\< 0.001 OR SOMETHING
+
 Our test returns a p-value of less than 2.2e-16 which is less than the alpha value 0.05. This implies that it is statistically significant. A statistically significant p-value indicates strong evidence against our null hypothesis. Therefore, we reject the null hypothesis that there is no difference in the proportion of funded and not funded loans for Food Sector Based on this hypothesis test, we can conclude that lender's may be more motivated to lend to the Food sector. They could be motivated by things related to the food sector, such as providing nutrition to people in developing nations or in supporting small-scale food businesses.
 
 ## Limitations and Conclusion
 
 Our analysis has a few potential limitations. We have made a few assumptions when creating our indicator variables borrower type and funding status. It is possible that these assumptions may have filtered out some data that could have provided us with some more insight. Another limitation is the size of the observations for Not funded loans. There are very few Not Funded loans when compared to Funded Loans and this hinders any comparison we would like to make. We need to assume that our data does not contain the entire population of Not Funded loans.
 
-To conclude, through descriptive statistics we observed that Food and Retail sectors have the highest number of funded loans. We see that female borrowers recieved the highest over all loan amounts throughout 2005-2012. (However, we must keep in mind that our data contains more female borrowers). We also looked at borrower types across sectors and noted that proportion of female borrowers is higher across most sectors  among funded loans. We also looked at the average amount given to borrowers across sectors and noted that group borrowers tend to received the lowest average loan amount in funded loans. Through our hypothesis test we learned that the average loan amount received by a borrower does differ based on the borrower's gender. Further we also observed that proportion of loans for female borrowers differs between funded and not funded sectors. 
+To conclude, through descriptive statistics we observed that Food and Retail sectors have the highest number of funded loans. We see that female borrowers recieved the highest over all loan amounts throughout 2005-2012. (However, we must keep in mind that our data contains more female borrowers). We also looked at borrower types across sectors and noted that proportion of female borrowers is higher across most sectors among funded loans. We also looked at the average amount given to borrowers across sectors and noted that group borrowers tend to received the lowest average loan amount in funded loans. Through our hypothesis test we learned that the average loan amount received by a borrower does differ based on the borrower's gender. Further we also observed that proportion of loans for female borrowers differs between funded and not funded sectors.
 
 Overall, we can conclude that Lender's may be heterogeneous in their preferences and motivations when it comes to lending. We have aggregated our data at numerous levels which could have led to the Simpson's paradox. This mainly refers to the appearance of a trend in several groups, however it may disappear when the groups are aggregated.
 
