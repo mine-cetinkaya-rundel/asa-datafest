@@ -24,9 +24,7 @@ Our data contains two relevant free text columns containing (i) the reasons lend
 
 ### Importing required libraries
 
-Before we dive into the analysis, we need to import all the required packages. In this analysis, the packages we have used are:
-
-EXPLICITLY MENTION WHICH PACKAGES ARE FOR TEXT MINING AND WHAT PART OF TEXT MINING THEY'RE USED FOR.
+Before we dive into the analysis, we need to import all the required packages.We use the text analysis packages for data cleaning, transformation and lemmatization. We also used some additional packages for visualization. The packages we used are:
 
 ```{r libraries, warning=FALSE, echo=TRUE, message=FALSE}
 #text analysis packages
@@ -82,9 +80,7 @@ TO UPDATE ASSUMPTIONS FOR DATA MISSINGNESS AND WHETHER IT IS MISSING AT RANDOM O
 
 ## Analysis
 
-DEFINE CORPORA
-
-In this section, we process the aforementioned free text fields to understand lender motivation. We begin with lender text then move to borrower text. In each portion of the analysis we convert the text fields into corpora, perform data cleaning, and text transformations, and visualize the processed data to generate insights relevant to the prompt.
+In this section, we process the aforementioned free text fields to understand lender motivation. We begin with lender text then move to borrower text. In each portion of the analysis we convert the text fields into corpora (plural for corpus - a format used for text analysis. It organize texts into datasets and is the format most convenient for the $\texttt{tm}$ package which we will be using), perform data cleaning, and text transformations, and visualize the processed data to generate insights relevant to the prompt.
 
 ### Lender text analysis
 
@@ -92,7 +88,7 @@ In this section, we process the aforementioned free text fields to understand le
 
 #### Creating a corpus
 
-Now that we've identified the relevant data, the first step towards text analysis is to clean the data and convert it to a corpus - a format used for text analysis, and the format most convenient for the $\texttt{tm}$ package which we will be using.
+Now that we've identified the relevant data, the first step towards text analysis is to clean the data and convert it to a corpus.
 
 Upon first inspection, we observe multiple special characters present which are not recognized by the typical `UTF-8` encoding of the file. Therefore we first encode the field using `latin1` encoding so that it can recognize these special characters.
 
@@ -155,9 +151,7 @@ corpus <- tm_map(corpus, stripWhitespace)
 
 #### Lemmatization
 
-WHAT IS AN AFFFIX
-
-Lemmatization is a method used in text analysis to remove the inflections and retain only the root or dictionary form of the word. This dictionary form of the word is referred to as the *lemma*. This is done by using morphological analysis. The function `lemmatize_strings` uses a lookup dictionary (Mechura's (2016) English lemmatization list available from the lexicon package) and reduces the strings to their lemma forms. Another method used in text analysis is Stemming. Stemming works by cutting off the affixes. The algorithm looks at common prefixes and suffixes that may occur for a word and reduce it to its stem.
+Lemmatization is a method used in text analysis to remove the inflections and retain only the root or dictionary form of the word. This dictionary form of the word is referred to as the *lemma*. This is done by using morphological analysis. The function `lemmatize_strings` uses a lookup dictionary (Mechura's (2016) English lemmatization list available from the lexicon package) and reduces the strings to their lemma forms. Another method used in text analysis is Stemming. Stemming works by cutting off the affixes (prefix/ suffix). The algorithm looks at common prefixes and suffixes that may occur for a word and reduce it to its stem.
 
 In our analysis, we use lemmatization because stemming can discard useful information. In the following example, the vector `x` contains different forms of the word *purchase*. We see that when we stem, the suffix of each form of the word is reduced, yielding the same root word *purchas*. When we use lemmatization, our result is the lemma of the word and additional context is retained for the word *purchaser*.
 
@@ -229,9 +223,7 @@ wordcloud(words = dtm_d$word, freq = dtm_d$freq, min.freq = 5,
           colors=brewer.pal(8, "Dark2"))
 ```
 
-In analyzing the text fields reported by lenders, we find that the most common word used is *help*. From the word cloud we observe that most of the words used by lenders seem to be in the sphere of helping people, \[WHICH WORDS ARE YOU THINKING ABOUT HERE? LIST A FEW\] indicating that lenders sign up on Kiva provide support and be of service to entrepreneurs. While help-related words dominate, there ar many less frequently used words, suggesting heterogeneity of lender motivation. Words such as *bless*, *can*, *able* and *fortunate* suggest that lender's are motivated by the abundance of resources at their disposal and are driven to share these resources. Other words such as *empower*, *community*, *succeed* and *achieve* indicate a motivation that stems from a larger picture of society. The choice of words implies their motivation to enable communities to increase control over their lives by helping them become more independent.
-
-MIGHT ALSO NOTE THAT EXCEPT FOR "POVERTY" MOST OF THE WORDS HAVE A POSITIVE CONNOTATION, SUGGESTING THAT LENDERS TEND TO FOCUS ON THE POSSIBILITY TO DO GOOD RATHER THAN GUILT OR CONCERN.
+In analyzing the text fields reported by lenders, we find that the most common word used is *help*. From the word cloud we observe that most of the words used by lenders seem to be in the sphere of helping people, such as *give*, *make* and *difference* indicating that lenders sign up on Kiva provide support and be of service to entrepreneurs. While help-related words dominate, there ar many less frequently used words, suggesting heterogeneity of lender motivation. Words such as *bless*, *can*, *able* and *fortunate* suggest that lender's are motivated by the abundance of resources at their disposal and are driven to share these resources. Other words such as *empower*, *community*, *succeed* and *achieve* indicate a motivation that stems from a larger picture of society. The choice of words implies their motivation to enable communities to increase control over their lives by helping them become more independent. We may also note that except for *poverty* most of the words used have positive connotations suggesting that lenders tend to focus on the possibility to do good rather than guilt or concern.
 
 ### Borrower text analysis
 
@@ -249,11 +241,11 @@ status_table <- kiva_ll %>%
   summarize(count = length(unique(loan_id))) %>% 
   arrange(desc(count))
 
-status_table %>% kbl(caption = "Value counts of status column") %>% 
-  kable_classic(bootstrap_options ="striped",full_width = F, html_font = "helvetica",position = "left")
+status_table %>% kbl(caption = "Value counts of status column",col.names=c("Status", "No. of loans") ) %>% 
+  kable_classic(bootstrap_options ="striped",full_width = F, html_font = "helvetica",position = "center")
 ```
 
-CENTER TABLE, CAPITALIZE HEADER, FIX ENTRIES TO BE WORDS NOT VARNAMES - THOUGHT I PUT THIS IN THE LAST EDIT
+FIX ENTRIES TO BE WORDS NOT VARNAMES - THOUGHT I PUT THIS IN THE LAST EDIT
 
 The status column contains 7 unique values. We look at the data dictionary and Kiva website to get a better idea of what each term means. Based on that we make the classification of these terms to our 2 classes funded and not-funded:
 
@@ -350,7 +342,7 @@ First we plot two bar charts to visualize and compare the top 10 most frequently
 par(mfrow=c(1,1)) 
 
 #Borrower Bar Chart of top 10 frequent words
-ggplot(funded_dtm_d[1:10,])+ aes(x = reorder(word, -freq), y=freq)+
+ggplot(funded_dtm_d[1:10,])+ aes(x = reorder(word, +freq), y=freq)+
        geom_bar(stat="identity", fill = "blue", alpha=.6,with = 0.5)+
   xlab("Word")+
   ylab("Frequency")+
@@ -358,7 +350,7 @@ ggplot(funded_dtm_d[1:10,])+ aes(x = reorder(word, -freq), y=freq)+
   theme(axis.text.x=element_text(size=12), axis.text.y=element_text(size=12))+
   ggtitle("Top 10 most frequent words in funded loans")
 
-ggplot(notfunded_dtm_d[1:10,])+ aes(x = reorder(word, -freq), y=freq)+
+ggplot(notfunded_dtm_d[1:10,])+ aes(x = reorder(word, +freq), y=freq)+
        geom_bar(stat="identity", fill = "blue", alpha=.6,with = 0.5)+
   xlab("Word")+
   ylab("Frequency")+
@@ -367,8 +359,6 @@ ggplot(notfunded_dtm_d[1:10,])+ aes(x = reorder(word, -freq), y=freq)+
   ggtitle("Top 10 most frequent words in not funded loans")
 
 ```
-
-SORT DESCENDING RATHER THAN ASCENDING SO THAT THE MOST COMMON WORD IS ON TOP, I THINK NATURALLY READ TOP TO BOTTOM
 
 In comparing these bar charts, we note that the top 3 words for both funded and not funded loans are the same - *buy*, *purchase* and *business*. The top 2 words also have the approximately more than double the frequency of the others. This implies that most borrowers are applying for loans to be able to source the raw materials for their businesses, regardless of ultimate funding status.
 
