@@ -12,24 +12,21 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 options(digits = 3)
 ```
 
-Another way of approaching the question of what characteristics impact loan repayment is to utilize survival analysis, which permits us to retain more of the data rather than restricting our analysis to completed loans. We are also interested in how the status of loan tends to change over time. In this tutorial, we use the $\texttt{survival}$ package for survival analysis, which focuses on the expected duration of time until occurrence of an event of interest (in our case the repayment of loan).
+Another way of approaching the question of what characteristics impact loan repayment is to utilize survival analysis, which permits us to retain more of the data available rather than restricting our analysis to completed loans; in other words, we would like to include the incomplete loans as well. We are also interested in how the status of loan tends to change over time. In this tutorial, we use the $\texttt{survival}$ package for survival analysis, which focuses on the expected duration of time until occurrence of an event of interest (in our case the repayment of loan).
 
-IT WOULD MAKE A LOT MORE SENSE TO MODEL TIME TO DEFAULT, SO THAT SURVIVORS ARE LOANS THAT NEVER DEFAULT. YOU NEED TO EXPLAIN CENSORING IN THIS PARAGRAPH.
+IT WOULD MAKE A LOT MORE SENSE TO MODEL TIME TO DEFAULT, SO THAT SURVIVORS ARE LOANS THAT NEVER DEFAULT.
+(I'm actually not sure whether the lenders/partners would be more intersted in getting a sense of how soon they can get their money fully paid back (model time-to-paid) or how long it takes for their money to eventually turns out not repaid (model time-to-default). There's some issue with the revised model modelling time-to-default, as can be seen in the summary() output as well as the survival curve plots, so I paused revising this doc and will continue after the morning meeting.)
 
 # Set Up
 
-We load the packages, read in the data set, and manipulated the data as we did in the frequentist logistic regression section [**here**](link%20to%20be%20added%20after%20embedded%20in%20the%20website)
-
-YOU DO NOT DO THE SAME MANIPULATION AS IN THE FREQUENTIST SECTION. IN THE FREQUENTIST SECTION YOU RESTRICTED IT TO COMPLETED LOANS WHICH DOES NOT HAVE ANY CENSORING SO YOU DIDN'T NEED SURVIVAL ANALYSIS.
+To start, we read in the data set and loaded the required packages.
 
 ```{r}
 loans <- read.csv("data/loans.csv")
 ```
 
 ```{r include=FALSE}
-library(dplyr)
 library(tidyverse)
-library(ggplot2)
 library(countrycode)
 library(survival)
 library(survminer)
@@ -37,22 +34,21 @@ library(survminer)
 
 # Survival Analysis
 
+The `loans` data can be separated into two types: complete data and censored data. Complete data means that the value of each sample unit is observed or known. In our case, we have the information about the time when the loan is paid or defaulted for completed loans, which is indicated by variables `paid_yr`, `paid_mo`, `paid_day`, etc.. Censored data means that the event of interest was not observed for all of the units in the sample or the exact times-to-failure of all the units are not known. In our case, for non-completed loans (those in repayment etc.), we do not know the time when they will get repaid. There are three types of censored data: right censored (also called suspended data), interval censored, and left censored. Right censored data are composed of units that did not "fail", in our case loans that did not become defaulted. For such loans, the status would become defaulted at some time after our data point if the units were to keep on operating. 
+
 ## Calculating Survival Times
 
-We computed a new variable `span`, which is the time between when the loan is funded and when the loan is paid back, and stored it in a new data set `ds`.
+For right-censored data, only two arguments are needed in the Surv() function: a vector of times and a vector indicating which times are observed and censored. We computed a new variable `span`, which is the time between when the loan is funded and when the loan is paid back, and stored it in a new data set `ds`.
 
 ```{r}
 ds <- loans %>% 
-  filter(status == "paid"|status == "defaulted") %>% 
-  mutate(paid_amount = if_else(is.na(paid_amount), 0, paid_amount),
-         continent = countrycode(sourcevar = location.country,
+  mutate(continent = countrycode(sourcevar = location.country,
                             origin = "country.name",
                             destination = "continent"),
          span = (paid_yr - funded_yr) * 365 + (paid_mo - funded_mo) * 30 + (paid_day-funded_day),
          sex = case_when(borrower_m_count == 0 ~ "female",
                          borrower_f_count == 0 ~ "male",
-                         TRUE ~ "mixed"),
-         status = if_else(status == "paid", 1, 0)) %>% 
+                         TRUE ~ "mixed")) %>% 
   select(status, span, sector, continent, sex)
 ```
 
@@ -61,15 +57,24 @@ ds <- loans %>%
 The `surv()` function takes the variables `span` and `status` as input and creates an object which serves as the input of `survfir()` function. We first created a simple survival curve that doesn't consider any different groupings, by specifying just an intercept (\~1) in the formula in `survfit()` function.
 
 ```{r}
-surv <- survfit(Surv(span,status==1)~1, data = ds)
+surv <- survfit(Surv(span,status=="defaulted")~1, data = ds)
 
 ggsurvplot(
-  fit = survfit(Surv(span,status==1)~1, data = ds),
-  xlab="Number of days before the loan is repaid", 
+  fit = survfit(Surv(span,status=="defaulted")~1, data = ds),
+  xlab="Number of days before the loan is defaulted", 
   ylab="Overall survival probability")
 ```
 
 Here, the x-axis specifies the number of days before the loan is repaid and the y-axis specifies the probability of loan being not repaid.
+
+```{r}
+# keep only top-most y-aixs
+ggsurvplot(
+  fit = survfit(Surv(span,status=="defaulted")~1, data = ds),
+  xlab="Number of days before the loan is defaulted", 
+  ylab="Overall survival probability",
+  ylim = c(0.994, 1))
+```
 
 ## Estimating Survival Probabilities
 
@@ -82,7 +87,9 @@ summary(surv, time = 365)
 summary(surv, time = 365*2)
 ```
 
-As the output shows, the probability of borrowers not paying back the loan to a quarter year is 98%, to half a year is 69.6%, to 1 year is 26.4%, and to 2 years is 0.554%. Thus, we can conclude that almost all borrowers don't pay back the loan in the first quarter after they receive the funds; the majority of borrowers would repay the loan in 1 year; after 2 years only few borrowers haven't paid back their loan.
+The probability of the loan not becoming defaulted is 1 up to all these time points.
+
+<!-- As the output shows, the probability of borrowers not paying back the loan to a quarter year is 98%, to half a year is 69.6%, to 1 year is 26.4%, and to 2 years is 0.554%. Thus, we can conclude that almost all borrowers don't pay back the loan in the first quarter after they receive the funds; the majority of borrowers would repay the loan in 1 year; after 2 years only few borrowers haven't paid back their loan.  -->
 
 ## Comparing Survival Times between Groups
 
@@ -90,39 +97,64 @@ We can take a look at the survival curve by loan sectors, continent, and sex of 
 
 ```{r}
 ggsurvplot(
-  fit = survfit(Surv(span,status==1)~sector, data = ds),
+  fit = survfit(Surv(span,status=="defaulted")~sector, data = ds),
   legend.title = "Sector",
   legend.labs = sort(unique(ds$sector)),
   title = "Survival Curves by Sector",
-  xlab = "Number of days before the loan is repaid", 
+  xlab = "Number of days before the loan is defaulted", 
   ylab = "Overall survival probability")
+ggsurvplot(
+  fit = survfit(Surv(span,status=="defaulted")~sector, data = ds),
+  legend.title = "Sector",
+  legend.labs = sort(unique(ds$sector)),
+  title = "Survival Curves by Sector",
+  xlab = "Number of days before the loan is defaulted", 
+  ylab = "Overall survival probability",
+  ylim = c(0.63, 1))
 
 ggsurvplot(
-  fit = survfit(Surv(span,status==1)~continent, data = ds),
+  fit = survfit(Surv(span,status=="defaulted")~continent, data = ds),
   legend.title = "Continent",
   legend.labs = sort(unique(ds$continent)),
   title = "Survival Curves by Continent",
-  xlab="Number of days before the loan is repaid", 
+  xlab="Number of days before the loan is defaulted", 
   ylab="Overall survival probability")
+ggsurvplot(
+  fit = survfit(Surv(span,status=="defaulted")~continent, data = ds),
+  legend.title = "Continent",
+  legend.labs = sort(unique(ds$continent)),
+  title = "Survival Curves by Continent",
+  xlab="Number of days before the loan is defaulted", 
+  ylab="Overall survival probability",
+  ylim = c(0.99999, 1))
 
 ggsurvplot(
-  fit = survfit(Surv(span,status==1)~sex, data = ds),
+  fit = survfit(Surv(span,status=="defaulted")~sex, data = ds),
   legend.title = "Sex",
   legend.labs = sort(unique(ds$sex)),
   title = "Survival Curves by Sex",
-  xlab="Number of days before the loan is repaid", 
+  xlab="Number of days before the loan is defaulted", 
   ylab="Overall survival probability")
+ggsurvplot(
+  fit = survfit(Surv(span,status=="defaulted")~sex, data = ds),
+  legend.title = "Sex",
+  legend.labs = sort(unique(ds$sex)),
+  title = "Survival Curves by Sex",
+  xlab="Number of days before the loan is defaulted", 
+  ylab="Overall survival probability",
+  ylim = c(0.994, 1))
 ```
 
-There seems to be no big difference in time of repayment across sectors. As for the continent, borrowers in Oceania tend to complete their loan repayments about a year later than borrowers in other continents. A borrower group that consists of both males and females tends to complete the loan repayment in the shortest period, and a female borrower or a female-only borrower group generally takes shorter time period to complete the loan repayment than a male borrower or a male-only borrower group does.
+<!-- There seems to be no big difference in time of repayment across sectors. As for the continent, borrowers in Oceania tend to complete their loan repayments about a year later than borrowers in other continents. A borrower group that consists of both males and females tends to complete the loan repayment in the shortest period, and a female borrower or a female-only borrower group generally takes shorter time period to complete the loan repayment than a male borrower or a male-only borrower group does. -->
 
 For numerical comparisons, we can use the `summary()` function to display the mean and median time it takes for each group to complete the loan repayment. For example, for `sex`:
 
 ```{r}
-summary(survfit(Surv(span,status==1)~sex, data = ds))$table
+summary(survfit(Surv(span,status=="defaulted")~sex, data = ds))$table
 ```
 
-The median time is 337 days for a male borrower or a male-only borrower group, 251 days for a female borrower or a female-only borrower group to fully repay the loan, and 165 days for a mixed-gender borrower group. There appears to be a shorter period to complete the loan repayment for mixed-gender borrower groups compared to single-gender borrower groups, and female borrowers tend to fully pay back their loans in a shorter time than male borrowers. This conclusion is consistent with our logistic model under the frequentist approach ([**here**](link%20to%20be%20added%20after%20embedded%20in%20the%20website)).
+The median times of when the loan becomes defaulted are NA for all borrower groups; the mean times are close to the end of trial (1000).
+<!-- The median time is 337 days for a male borrower or a male-only borrower group, 251 days for a female borrower or a female-only borrower group to fully repay the loan, and 165 days for a mixed-gender borrower group. There appears to be a shorter period to complete the loan repayment for mixed-gender borrower groups compared to single-gender borrower groups, and female borrowers tend to fully pay back their loans in a shorter time than male borrowers. This conclusion is consistent with our logistic model under the frequentist approach ([**here**](link%20to%20be%20added%20after%20embedded%20in%20the%20website)). -->
 
 SUMMARIZE YOUR LOGISTIC REGRESSION FINDINGS AGAIN IN CASE THEY FORGOT.
 
