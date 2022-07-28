@@ -28,9 +28,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgdal-dev libgeos-dev libproj-dev
 
-      - name: Install protobuff
+      - name: Install protobuff & jq
         run: |
-          sudo apt-get install -y libprotobuf-dev protobuf-compiler
+          sudo apt-get install -y libprotobuf-dev protobuf-compiler libjq-dev
 
       - name: Put pandoc in PATH
         run: |
