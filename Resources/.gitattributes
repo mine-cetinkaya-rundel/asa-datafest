@@ -1,0 +1,2 @@
+data/lender_loans_with_wbi.csv filter=lfs diff=lfs merge=lfs -text
+*.csv filter=lfs diff=lfs merge=lfs -text
