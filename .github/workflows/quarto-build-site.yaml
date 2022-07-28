@@ -28,6 +28,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgdal-dev libgeos-dev libproj-dev
 
+      - name: Install protobuff
+        run: |
+          sudo apt-get install -y libprotobuf-dev
+
       - name: Put pandoc in PATH
         run: |
           mkdir -p ~/.local/bin
