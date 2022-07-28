@@ -155,16 +155,20 @@ Next, we consider geographical trends in the Kiva data. Since there are 65 many 
 *Geographical Distribution of Borrowers*
 
 ```{r loan distribution across borrower country, message = FALSE, warning = FALSE}
+# Identifying top 10 borrower countries
+top_10_borrower_table <- lender_loans %>% 
+  group_by(location.country) %>% 
+  summarize(total_amount_borrower = sum(loan_amount)) %>% 
+  arrange(desc(total_amount_borrower))
+top_10_bor<- unique(top_10_borrower_table$location.country)[1:10]
 
-# Loan Amount
+# Loan Amount by year
 loan_amount_country <- aggregate(lender_loans$loan_amount, by = list(year = lender_loans$posted_yr, country = lender_loans$location.country), FUN = sum, na.rm = TRUE) %>% 
   rename("loan_amount" = "x") %>% 
   mutate(loan_amount = loan_amount/1000) %>% 
-  filter(country %in% c("Peru", "Uganda", "Bolivia", "Cambodia", "Paraguay", "Mexico",
-                        "United States", "Tajikistan", "Tanzania", "Azerbaijan"), 
-         year < 2012)
+  filter(country %in% top_10_bor, year < 2012)
 
-# Bar Chart country vs Loan Amount
+# Bar Chart loan amount vs year by country
 ggplot(loan_amount_country) +
   geom_line(aes(x=year, y=loan_amount, fill = country, color = country)) +
   xlab("Year") +
@@ -181,13 +185,21 @@ From the graph above, we see that in half of the top ten borrower countries (Mex
 *Geographical Distribution of Lenders*
 
 ```{r Lenders Trend, message = FALSE, warning = FALSE, header = FALSE}
-# Summarize the loan amount based on the lenders' country
+# Identifying top 10 lender countries
+top_10_lender_table <- lender_loans %>% 
+  group_by(country_code) %>% 
+  summarize(total_amount_lender = sum(loan_amount)) %>%
+  arrange(desc(total_amount_lender)) %>% 
+  na.omit(country_code)
+top_10_lender<- unique(top_10_lender_table$country_code)[1:10]
+
+# Summarize the loan amount based on the lenders' country by year
 country <- aggregate(lender_loans$loan_amount, by = list(year = lender_loans$posted_yr, country = lender_loans$country_code), FUN = sum, na.rm = TRUE)
 
 # Convert coutry codes to country names
 country_decoded <- country %>%
   rename("country_name" = "country", "loan_amount" = "x") %>%
-  filter(country_name %in% c("US", "CA", "GB", "AU", "DE", "NL", "SE", "NO", "JP", "PH"), year < 2012) %>%
+  filter(country_name %in% top_10_lender, year < 2012) %>%
   mutate(country_name = countrycode(country_name, "iso2c", "country.name"))
 
 # Plot the total loan amount by lender countries graph
@@ -211,7 +223,7 @@ To understand lender motivation, we begin with some background easily located vi
 We further explore the heterogeneity in lending practices by identifying the top recipients in terms of the total dollar value of loans received for each of the top lenders. In the table below Borrower 1 refers to the top recipient country, Borrower 2 refers to the second largest recipient, and so on. Overall, while Peru and Uganda are popular recipient countries, a variety of countries from Asia, Africa, and South America show up as well. The table reveals that on aggregate, lenders do not prefer borrowers from their own countries. However, the top recipient is often in a region formerly colonized or geographically close to the each lender nation. These historical and geographical connections suggest a possible avenue for further analysis of lender motivation.
 
 ```{r Lenders top borrowers table}
-# Subset the dataset for top 10 lender countries
+# Subset the data set for top 10 lender countries
 top_lenders <- lender_loans %>%
   filter(country_code %in% c("US", "CA", "GB", "AU", "DE", "NL", "SE", "NO", "JP", "PH"))
 
@@ -221,7 +233,7 @@ top_lender_borrow <- aggregate(top_lenders$loan_amount, by = list(lender_country
   arrange(desc(x)) %>%
   arrange(lender_country) %>%
   group_by(lender_country) %>%
-  slice(1, 2, 3) %>%
+  slice(1, 2, 3) %>% #Subset the top three borrowers for each lender country
   mutate(x = format(x, big.mark = ",", trim = TRUE)) %>%
   rename("Loan Amount (USD)" = "x", "Lender Country" = "lender_country", "Borrower Country" = "Group.2") %>%
   group_by(`Lender Country`) %>%
@@ -230,7 +242,7 @@ top_lender_borrow <- aggregate(top_lenders$loan_amount, by = list(lender_country
          `Borrower 3` = unique(`Borrower Country`)[3]) %>%
   mutate(`Borrower 1` = ifelse(`Borrower 1` == 
          "The Democratic Republic of the Congo", "DRC", `Borrower 1`)) %>%
-  select(!c(`Borrower Country`, `Loan Amount (USD)`)) %>%
+  select(!c(`Borrower Country`, `Loan Amount (USD)`)) %>% #Reorganize table
   distinct()
 
 # Format and output the table
@@ -304,13 +316,14 @@ sector_paid <-
     FUN = sum, na.rm = TRUE
   ))
 
-# Calculate the unpaid loan amount
+# Calculate the unpaid loan amount by sector in thousands USD
 by_sector <- sector_loan %>%
   mutate(x = x/1000) %>% 
   mutate(paid = sector_paid$x/1000) %>%
   mutate(unpaid = (x - paid)) %>%
   rename(loan = x)
 
+# Generate status variable and rename the columns
 by_sector <- by_sector[order(by_sector$loan, decreasing = TRUE), ]
 by_sector_paid <- select(by_sector, sector, paid) %>%
   mutate(status = "paid") %>%

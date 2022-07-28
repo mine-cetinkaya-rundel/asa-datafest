@@ -83,12 +83,11 @@ bar1 <- ggplot(loans, aes(x = status)) +
 bar1
 ```
 
-We then converted all $\text{NA}$ in the column `paid_amount` to 0 and created a new variable `continent` based on the country to reduce the number of levels of the geographical variable.
+We then created a new variable `continent` based on the country to reduce the number of levels of the geographical variable.
 
 ```{r}
 loan <- loans %>% 
-  mutate(paid_amount = if_else(is.na(paid_amount), 0, paid_amount),
-         continent = countrycode(sourcevar = location.country,
+  mutate(continent = countrycode(sourcevar = location.country,
                             origin = "country.name",
                             destination = "continent"))
 ```
