@@ -12,17 +12,16 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 options(digits = 3)
 ```
 
-I ASKED YOU TO ADD AN INTRODUCTION HERE OUTLINING THE STRUCTURE OF THIS TUTORIAL: EXPLAIN THE MOTIVATION, INTRODUCE THE DIFFERENCE BETWEEN BAYESIAN AND FREQUENTIST REGRESSION, AND SAY WHAT STEPS WILL BE IN HERE.
+# To Start
 
-In this section, we analyze the factors associated with loan repayment, so we are performing our analyses on the `loans.csv` data set.
+In this section, we want to analyze factors associated with loan repayment, so we are performing our analyses on the `loans.csv` data set. The statistical method we would use here is regression. Regression analysis is a predictive modelling technique that analyzes the relation between the dependent variable(s) and the independent variable(s) in a dataset. There are many types of regressions, and which one(s) to use depends upon a number of factors: the type of dependent variable, the number of independent variables, the pattern of dependent vs. independent variables, the shape of the regression line, etc. We will decide which type of regression to use after we dive deeper into our data. 
 
+First, we read the dataset into our R environment:
 ```{r}
 loans <- read.csv("data/loans.csv")
 ```
 
-## Required Packages
-
-Next, we loaded all the packages needed to perform our analysis using the `library()` function:
+Next, in order to perform our statistical analysis, we load all the packages needed using the `library()` function (in practice, which packages to use will be decided as you proceed with your analyses, rather than determined before starting):
 
 ```{r}
 library(tidyverse)
@@ -139,16 +138,9 @@ ggplot(d, aes(x = loan_amount, group = status)) +
 
 # Logistic Regression
 
-The response of interest is loan payment status, recorded in the `status` column of the `loans` data set. It is a categorical variable with 8 levels: "paid", "refunded", "defaulted", "in_repayment", "expired", "inactive", "fundraising", and "funded". Intuitively, for such a categorical response variable, one appropriate model would be a multinomial logistic regression which allows for more than two categories of the response variable. However, the interpretation of results is not as straightforward in such a model - and since the prompt is explicitly concerned with loan default, a more interpretable model would be one which dichotomizes the data to contrast defaulted and non-defaulted loans.
+The response of interest is the loan repayment status, recorded in the `status` column of the `loans` data set. It is a categorical variable with 8 levels: "paid", "refunded", "defaulted", "in_repayment", "expired", "inactive", "fundraising", and "funded". Intuitively, for such a categorical response variable, one appropriate model would be a multinomial logistic regression which allows for more than two categories of the response variable. However, the interpretation of results is not as straightforward in such a model - and since the prompt is explicitly concerned with loan default, a more interpretable model would be one which dichotomizes the data to contrast defaulted and non-defaulted loans.
 
-To achieve this, we restrict the dataset to completed loans, which are either repaid or not repaid. With a binary response variable, we can utilize a binary logistic regression. (We are not using a linear regression because it can generates predictions larger than 1 or smaller than 0 which are not sensible for classification since the true probability must fall between 0 and 1; also, linear regression assumes normal errors, which is not the case for a Bernoulli variable). We set the `status` variable to be 1 if the loan status is and 0 if it is "defaulted", such that we know the negative class is "defaulted" and the positive class is "paid".
-
-```{r}
-d <- loan %>% 
-  filter(status == "paid"|status == "defaulted")
-d <- d %>% 
-  mutate(status = if_else(status == "paid", 1, 0))
-```
+To achieve this, we restrict the dataset to completed loans, which are either repaid or not repaid. With a binary response variable, we can utilize a binary logistic regression. (We are not using a linear regression because it can generates predictions larger than 1 or smaller than 0 which are not sensible for classification since the true probability must fall between 0 and 1; also, linear regression assumes normal errors, which is not the case for a Bernoulli variable). 
 
 The logistic regression model is an example of a broad class of models known as generalized linear models (GLM). GLM's extend ordinary least squares regression to response variables from arbitrary distributions through the use of a link function; instead of the response varying linearly with the covariates, its link function does. In this case, our response is a binary variable and so the Bernoulli model is appropriate. The Bernoulli distribution is a discrete probability distribution of a random variable which takes the value 1 with probability $p$ and the value 0 with probability $q=1-p$.The likelihood for one observation $y$ can be written as a Bernoulli PMF over possible outcomes $k$: $$\begin{equation}
     f(k;p) =
@@ -162,9 +154,24 @@ The logistic regression model is an example of a broad class of models known as 
 
 The two most common link functions used for binomial GLMs are the logit and probit functions. For binary outcomes a common choice is the *logit link.* The logit link converts probabilities to log odds, and therefore the model coefficients can be easily interpreted in terms of odds ratios. When the logit link function is used the model is often referred to as a logistic regression model (the inverse logit function is the CDF of the standard logistic distribution).
 
-## Frequentist Approach
+The frequentist approach
+assumes data are random sample and parameters are fixed while the Bayesian approach assumes both
+data and parameters are random. The Bayesian analysis uses prior knowledge of the parameters and the
+conditional distribution of the data given the parameters to be employed to find the posterior distributions
+of the parameters given the observed data. We would introduce the general procedures of these two approaches In this section, we would apply two approaches of logistic regression: frequentist and Bayesian, and compare the results. 
 
-We first fit the logistic regression model using a Frequentist approach.
+## Data Preparation
+
+### Reponse Variable
+
+We set the `status` variable to be 1 if the loan status is and 0 if it is "defaulted", such that we know the negative class is "defaulted" and the positive class is "paid".
+
+```{r}
+d <- loan %>% 
+  filter(status == "paid"|status == "defaulted")
+d <- d %>% 
+  mutate(status = if_else(status == "paid", 1, 0))
+```
 
 ### Variable Selection
 
@@ -172,11 +179,11 @@ The response variable we were using is `status,` since we wanted to explore whic
 
 -   `loan_amount`, because we think that the smaller loans tend to be more easily paid back than the larger ones.
 
--   `sector`, `posted_yr`, `continent`, as our EDA shows the status distribution of loan differs across sectors, the year when the loan is posted on Kiva, and the continent where the borrower is located. \[I think it's not necessary to discussed in detail again about how the data is patterned with respect to each variable other than in the EDA section\]
+-   `sector`
+`posted_yr`
+`continent`, as our EDA shows the status distribution of loan differs across sectors, the year when the loan is posted on Kiva, and the continent where the borrower is located.
 
--   `time`, which is a variable we created representing the time from when the loan is posted to when the loan is funded, in months, since sometimes the time it takes for the borrowers to receive the loan may affect their financial situation and thus affect their ability to repay the loan according to **t**he terms agreed.
-
--   `dif`, which is a variable we created to calculate the difference between the loan amount and funded amount, because whether the borrowers get the full amount of loan they requested may affect their financial ability to pay back the loan.
+-   `time`, which is a variable we created representing the time from when the loan is posted to when the loan is funded, in months, since sometimes the time it takes for the borrowers to receive the loan may affect their financial situation and thus affect their ability to repay the loan according to the terms agreed.
 
 -   `sex`, which indicates the sex of a borrower group, where "mixed" means there are both males and females in a borrower group.
 
@@ -190,36 +197,26 @@ d <- d %>%
                          TRUE ~ "mixed"))
 ```
 
-```{r}
-# in original data
-loans <- loans %>% 
-  mutate(dif = loan_amount-funded_amount)
-loans %>% 
-  filter(dif!=0) %>% 
-  summarise(min = min(dif), 
-            max = max(dif))
-# in current data
-unique(d$dif)
-```
-
-However, although in the original data set the difference between loan amount and funded amount can range from 50 to 7650 other than 0, after we filtered the original data set to contain only completed loans, all the observations have funded amount equal to the loan amount. Thus, the variable `dif` would not make any difference on the response variable, so we were excluding it from our model.
-
 ### Data Splitting
 
-Next, we split our data into training set and test set, in order to estimate the performance of our model on unseen data: data not used to train. This is to see whether our model is generalized or overfitting. Overfitting occurs when the model fits exactly against the training data - it's memorizing the seen pattern rather than generalizing to new data.
+Next, we split our data into training set and test set, in order to estimate the performance of our model on unseen data: data not used to train. This is to see whether our model is generalized or overfitting. Overfitting occurs when the model fits exactly against the training data - it's memorizing the seen pattern rather than generalizing to new data. We are sampling 80% of the data into the training set and the other 20% into the testing set.
 
 ```{r}
-seed <- 2
-train1 <- sample(d$loan_id, 30000)
+seed <- 1
+train <- sample(d$loan_id, nrow(d)*0.8)
 training <- d %>% 
-  filter(loan_id %in% train1)
+  filter(loan_id %in% train)
 testing <-d %>% 
-  filter(!loan_id %in% train1)
+  filter(!loan_id %in% train)
 ```
+
+## Frequentist Approach
+
+We first fit the logistic regression model using a Frequentist approach.
 
 ### Model Fitting
 
-Now we're ready to fit our logistic model on the training set using the `glm()` function:
+We're fitting our model on the training set using the `glm()` function:
 
 ```{r}
 model <- glm(status ~ loan_amount + sector + posted_yr + continent + time + sex, data = training, family = "binomial"(link = "logit")) 
@@ -241,7 +238,7 @@ The variables selected here are all except `time`. We dropped the `time` variabl
 final <- glm(status ~ loan_amount + sector + posted_yr + continent + sex, data = training, family = "binomial"(link = "logit")) 
 ```
 
-### Model Output
+### Results
 
 We now look at a summary of the model output using the `summ()` function from the $\texttt{jtools}$ package:
 
@@ -249,28 +246,11 @@ We now look at a summary of the model output using the `summ()` function from th
 summ(final)
 ```
 
-A brief look at the output would tell us that terms `sectorEducation` and `continentOceania` have coefficients considerably larger than others but in the meantime have p-values considerably larger than others. A p-value measures the probability of obtaining the observed results, assuming that the null hypothesis is true. The lower the p-value, the greater the statistical significance of the observed difference. Thus, with p-values close to 1, these two terms are not considered statistically significant. An intuitive reason of these high p-values would be that in our training set (as well as in the original data set), Education sector is one of the top 3 sectors with the least number of observations, accounting for only 0.43% of the data. Similarly, Oceania is the continent with the least observations in our training set (as well as in the original data set), accounting for only 1.25% of the data. See the percentages in the tables below:
+A brief look at the output would tell us that the term `continentOceania` have coefficients considerably larger than others but in the meantime have a p-value close to 1. A p-value measures the probability of obtaining the observed results, assuming that the null hypothesis is true. The lower the p-value, the greater the statistical significance of the observed difference. Thus, with p-values close to 1, these two terms are not considered statistically significant. An intuitive reason for terms with high p-values would be that the number of observations that fall into those categories accounts for only a very small portion of the data. 
 
-```{r}
-t1<-training %>% 
-  drop_na(sector) %>% 
-  group_by(sector) %>% 
-  summarise(percent = round(n() / nrow(training) * 100, 2)) %>% 
-  arrange(desc(percent)) %>% 
-  mutate(percent = paste0(percent, "%"))
+Interpreting the coefficients in a logistic regression is a little less straight-forward than in linear regression, but still quite simple. For example, the coefficient for `posted_yr` is "0.44", which means that for a given year when the loan is posted, the expected odds of the loan getting repaid is $e^{0.44}\approx1.55$ times the odds of the loan getting repaid if the loan is posted in the previous year. 
 
-t2<-training %>% 
-  drop_na(continent) %>% 
-  group_by(continent) %>% 
-  summarise(percent = round(n() / nrow(training) * 100, 2)) %>% 
-  arrange(desc(percent)) %>% 
-  mutate(percent = paste0(percent, "%"))
-
-kable(t1)
-kable(t2)
-```
-
-Interpreting the coefficients in a logistic regression is a little less straight-forward than in linear regression, but still quite simple. For example, the coefficient for `posted_yr` is "0.42", which means that for a given year when the loan is posted, the expected odds of the loan getting repaid is $e^{0.42}\approx1.52$ times the odds of the loan getting repaid if the loan is posted in the previous year.
+Among all sectors, a loan in the Education sector has the highest odds of getting repaid, while loans in the Personal Use sector are the least likely to be repaid. Loans in the Housing sector has $\frac{e^0.63}{e^0.52} \approx 1.116$ times the odds for loans in the Food sector to be repaid. In terms of the continent where the loan transaction took place, besides Oceania which has highest coefficient but is not statistically significant, Europe is the continent where loans generally have the highest odds of being repaid ($e^3.47-e^1.51\approx 7.1$ times the odds for Asia, 15.33 times the odds for Americas, and 32.14 times the odds for Africa). As for the sex of the borrower(s), a female borrower or a female-only borrower group has the odds of repaying the loan  $1/e^{-0.22}\approx 1.24$ times that for a male borrower or a male-only borrower group.
 
 ### Model Evaluation
 
@@ -283,40 +263,22 @@ ggroc(roc1, legacy.axes = TRUE) +
   labs(x = 'False-positive rate', y = 'True-positive rate', title = 'Simulated ROC curve')
 ```
 
-WHAT DO YOU MEAN BY MONOTONICALLY INCREASING IN BOTH DIRECTIONS? WHAT DIRECTIONS?
-
-As we can see from the graph, the curve is monotonically increasing in both directions. This is because both False positive rate and True positive rate are increased with lower the classification threshold which classifies more items as positive. The closer the ROC curve is to the top left corner of the plot, the better the model does at classifying the data into correct categories. To quantify this, we can calculate the AUC (area under the curve) which tells us how much of the plot is located under the curve. AUC ranges in value from 0 to 1. A model whose predictions are 100% wrong has an AUC of 0; one whose predictions are 100% correct has an AUC of 1. The AUC score would be 1 in that scenario. We used the `auc()` function from the $\texttt{pROC}$ package to calculate the AUC of the model.
+As we can see from the graph, the curve is increasing in both directions. This is because both False positive rate and True positive rate are increased with lower the classification threshold which classifies more items as positive. The closer the ROC curve is to the top left corner of the plot, the better the model does at classifying the data into correct categories. To quantify this, we can calculate the AUC (area under the curve) which tells us how much of the plot is located under the curve. AUC ranges in value from 0 to 1. A model whose predictions are 100% wrong has an AUC of 0; one whose predictions are 100% correct has an AUC of 1. The AUC score would be 1 in that scenario. We used the `auc()` function from the $\texttt{pROC}$ package to calculate the AUC of the model.
 
 ```{r}
 auc(testing$status,predicted1)
-summ(model)
 ```
 
-Here we got an AUC score of 0.7158, which means there is about 70% chance that our model will be able to distinguish between positive class (paid) and negative class (defaulted). In general, an AUC of 0.5 suggests no discrimination, 0.7 to 0.8 is considered acceptable, 0.8 to 0.9 is considered excellent, and more than 0.9 is considered outstanding.
+Here we got an AUC score of 0.7094, which means there is about 70% chance that our model will be able to distinguish between positive class (paid) and negative class (defaulted). In general, an AUC of 0.5 suggests no discrimination, 0.7 to 0.8 is considered acceptable, 0.8 to 0.9 is considered excellent, and more than 0.9 is considered outstanding.
 
-### Conclusion - MOVE THIS DUSCUSSION TO YOUR MODEL OUTPUT SECTION AND CALL IT "RESULTS". CHANGE THIS SECTION TO BE CALLED "DISCUSSION" AND MAKE IT SHORTER, SUMMARIZE THE IMPORTANT FINDINGS. 
+### Discussion 
 
-DON'T SUBTRACT ONE FROM ODDS, INSTEAD SAY ODDS INCREASE BY 1.54 EACH YEAR ETC, CHANGE ALL DIFFERENCES CORRESPONDINGLY. YOU DON'T HAVE TO DO THE ODDS TRANSFORMATION FOR EVERYTHING, JUST DO IT FOR ONE OR TWO. SHORTEN THE DISCUSSION AND FOCUS ON THE VARIABLES THAT ARE IMPORTANT AND SIGNIFICANT.
+Based on our analysis, loan amount is not considered to be a factor affecting the loan repayment status at all. We are almost certain that borrowers in Europe is generally predicted to have a relatively high probability of fully repay the loan among all the continents, followed by Asia and Americas. Loans in all the sectors except for Personal Use have a higher odds of being repaid than the Agriculture sector. Male borrowers are predicted to be certainly less likely to repay the loan compared to female borrowers. 
 
-Based on our analysis, loan amount is not considered to be a factor affecting the loan repayment status at all, since it has a coefficient of 0. The probability of loans getting repaid rather than not repaid is generally increasing over years, with $e^0.43-1\approx0.54$ more adds each year, which is a good sign in the economy. Among all sectors, a loan in the Education sector has the highest odds ratio of getting repaid, while loans in the Personal Use sector are the least likely to be repaid. Loans in the Housing sector has $e^0.98-1\approx 1.66$ more odds of being repaid than loans in the Agriculture sector which is the baseline category of `sector` variable in our model and has $e^0.98-e^0.43\approx 1.13$ more odds of being repaid than loans in the Food sector. In terms of the continent where the loan transaction took place, Oceania has the highest odds ratio for the loan being repaid while Africa has the lowest odds ratio. Besides Oceania which has highest coefficient but is not considered to be significant due to a p-value close to 1, Europe is the continent where loans generally have the highest odds of being repaid ($e^3.44-e^1.40\approx 27.13$ higher than the odds for Asia, $e^3.44-e^0.66\approx 29.25$ higher than Americas, and $e^3.44-1\approx 30.19$ higher than Africa). As for sex of the borrower(s), a female borrower or a female-only borrower group (the baseline of `sex` variable in our model) has the highest odds ratio of repaying the loan, since both `sexmale` and `sexmixed` have negative coefficients. Specifically, compared to a female borrower or a female-only borrower group, a male borrower or a male-only borrower group has $1-e^{-0.21}\approx 0.19$ less odds of repaying the loan, and a borrower group that consists of both males and females has $1-e^{-0.09}\approx 0.09$ less odds of repaying the loan.
 
 ## Bayesian Approach
 
 Next, we implement an alternative to the model above using a Bayesian approach. While a frequentist assumes that there are true values of the parameters of the model and computes the point estimates of the parameters, a Bayesian asserts that only data are real, and treats the model parameters as random variables whose uncertainty can be characterized by probability distributions.
-
-### Sampling
-
-To reduce time-complexity that `stan_glm()` needs to fit a model, we sampled 5000 from the 68707 observations. We set a seed so that we get the same results for randomization.
-
-```{r}
-seed <- 1
-d1 <- sample_n(d, 5000)
-```
-
-```{r include=FALSE}
-load("data/post1.Rdata")
-load("data/post0.Rdata")
-```
 
 ### Model Fitting
 
@@ -326,63 +288,73 @@ The `rstanarm` equivalent of `glm()` is `stan_glm()`, which supports every l
 
 Note that in contrast with the Frequentist procedure, in Bayesian estimation we need to specify priors for our parameters, which permit us to incorporate existing knowledge of the parameters into our model.
 
-In the following code, we specified the chosen link, and used the default priors for the intercept and the predictor coefficients.
-
-SAY WHAT THE DEFAULT PRIORS ARE. YOU PRINT THEM BUT DON'T INTEPRET
+In the following code, we fit a logistic model on the same training set as in the frequentist section, with specified link and the default priors for the intercept and the predictor coefficients.
 
 ```{r eval=FALSE}
-post1 <- stan_glm(status ~ loan_amount + sector + posted_yr + continent + sex, data = d1,
+seed = 1
+post <- stan_glm(status ~ loan_amount + sector + posted_yr + continent + sex, 
+                 data = training,
                  family = binomial(link = "logit"), 
-                 #prior = normal(0,1), prior_intercept = normal(0,1),
                  seed = seed,
                  refresh = 0,
                  cores=3, chains = 3,warmup = 500,iter = 1200)
 ```
 
+We can save our models in a folder so that RStudio doesn't need to go through the model fitting process every time we knit the document. Just load the models from where they are stored.
+
+```{r eval=FALSE, echo=FALSE}
+save(post, file = "data/post.RData")
+save(post0, file = "data/post0.RData")
+```
+
+```{r include=FALSE}
+load("data/post.Rdata")
+load("data/post0.Rdata")
+```
+
 The `prior_summary()` function would allow us to see the info on priors used in this model:
 
 ```{r}
-prior_summary(post1)
+prior_summary(post)
 ```
 
-We can view the output of the model here:
+The default priors our model used is normal distributions with location parameter of 0 and scale parameter of 2.5, for both the intercept and coefficients.
 
-```{r}
-post1
-```
+In order to get an idea of which variables are associated with changes in the probability of repayment, we draw a caterpillar plot, which displays the posterior medians and uncertainty intervals.
 
-It includes the point estimates (median) as well as the uncertainty estimates (median absolute deviation) for coefficients of all predictors. We can notice that the median estimate for `loan_amount` is 0.0 with a median absolute deviation of 0.0, indicating no relationship between loan amount and the loan status. Among the sectors, Education, Entertainment, Health, Personal Use, and Wholesale each has a considerably large median estimate, but that comes with an almost equally large median absolute deviation. Unsurprisingly, these five sectors have the top 5 least numbers of observations. Same for the `continent` variable, the two continents with the top 2 least numbers of observations have considerably large median estimates as well as uncertainty intervals.
-
-DON'T SPEND SO MUCH TIME DISCUSSING NON-RESULTS. INSTEAD OF PRINTING THE MODEL OUTPUT AND DISCUSSING THE MAD_SD JUST SHOW THE CATERPILLER PLOT.
-
-```{r}
-kable(t1)
-kable(t2)
-```
-
-### Model Parameter Visualization
-
-In order to get an idea of which variables are associated with changes in the probability of repayment, we draw a caterpillar plot, which displays the median and estimate interval for all the coefficients.
-
-First, we sort the predictor variables in our model `post1` by their posterior medians. To do this, we extracted the `coefficient` element from `post1` and converted it into a data frame which had only one column "post1.coefficients". We then sorted the rows based on the value of the coefficients. Next, we extracted the row names except for the intercept to pass it as the `pars` parameter in the `mcmc_intervals()` function so that it plots the 95% uncertainty intervals computed from posterior draws with all chains merged in the order of ascending median.
+We sort the predictor variables in our model `post` by their posterior medians. To do this, we extracted the `coefficient` element from `post` and converted it into a data frame which had only one column "post.coefficients". We then sort the rows based on the value of the coefficients. Next, we extract the row names except for the intercept to pass it as the `pars` parameter in the `mcmc_intervals()` function so that it plots the 95% uncertainty intervals computed from posterior draws with all chains merged in the order of ascending median.
 
 ```{r}
 # extract the coefficients and sort them in ascending order
-coef <- data.frame(post1$coefficients) %>% 
-  arrange(post1.coefficients)
+coef <- data.frame(post$coefficients) %>% 
+  arrange(post.coefficients)
 
 # store the variables corresponding to the coefficients as a list
 order <- rownames(coef)[-1]
 
 # plot the sorted coefficients with uncertainty interval
-cate <- mcmc_intervals(as.matrix(post1), pars = order, prob = 0.95, prob_outer = 1)
-cate
+cate <- mcmc_intervals(as.matrix(post), pars = order, prob = 0.95, prob_outer = 1)
 ```
+
+### Results
+
+A look at the caterpillar plot shows that `continentOceania` has significantly larger median and uncertainty interval than other terms and is thus compressing the plot to be uninformative, so we remove `continentOceania` from the caterpillar plot and replot it:
+
+```{r}
+coef <- coef %>% 
+  filter(rownames(.)!="continentOceania")
+p <- data.frame(post)
+order_new <- gsub(" ",".", order)
+cate_new <- mcmc_intervals(as.matrix(p), pars = order_new, prob = 0.95, prob_outer = 1)
+cate_new
+```
+
+Since the plot is in an order of the posterior median, it allows us to directly see which predictors seem to have more or less effect on the response variable. We can notice that the median estimate for `loan_amount` falls exactly on the "0.0" line with no observable uncertainty interval, indicating no relationship between loan amount and the loan status. Among the sectors, Transportation, Manufacturing, Construction, Retail, and Food have an uncertainty interval entirely positive; Health, Housing, Arts, and Services has a positive median but some portion of the uncertainty interval falls on the negative part; Personal Use has a negative median but some portion of the uncertainty interval falls on the positive part. Overall, the larger medians also come up wider uncertainty intervals, except for `continentAsia`, which has a fourth large median but nearly 0 uncertainty interval.
 
 ### Model Evaluation
 
 ```{r}
-(loo1 <- loo(post1, save_psis = TRUE))
+(loo1 <- loo(post, save_psis = TRUE))
 ```
 
 In the code chunk above, we assessed the strength of our model via its posterior predictive LOOCV (Leave One Out Cross-Validation). Cross-validation is a technique for evaluating models by training the models on subsets of the available input data and evaluating them on the complementary subset of the data. LOOCV is a type of cross-validation approach in which each observation is considered as the validation set and the rest ($N-1$) observations are considered as the training set. PSIS-LOO CV is and efficient approximate LOOCV for Bayesian models using Pareto smoothed importance sampling ([**PSIS**](https://www.rdocumentation.org/link/PSIS?package=loo&version=2.5.1&to=%3Dpsis)). We can see from the output that PSIS-LOO result is reliable as all Pareto k estimates are small (k\< 0.5). However as we know, this accuracy rate is quite meaningless unless we have something to compare it to. So we created a baseline model with no predictors for comparison:
@@ -400,12 +372,12 @@ post0 <- stan_glm(status ~ 1, data = d1,
 rstanarm::compare_models(loo0, loo1)
 ```
 
-Since difference is positive, the expected predictive accuracy for the second model (post1) is higher.
+Since difference is positive, the expected predictive accuracy for the second model (post) is higher.
 
 Below, we compute posterior predictive probabilities of the linear predictor via the `posterior_linpred()` function provided in the $\texttt{rstanarm}$ package. This function will extract posterior draws from the linear predictor. If we used a link function, then specifying the transform argument as `TRUE` will return the predictor as transformed via the inverse-link.
 
 ```{r}
-preds <- posterior_linpred(post1, transform=TRUE)
+preds <- posterior_linpred(post, transform=TRUE)
 pred <- colMeans(preds)
 ```
 
@@ -416,10 +388,12 @@ pr <- as.integer(pred >= 0.5)
 round(mean(xor(pr,as.integer(d1$status==0))),3) #classification accuracy
 ```
 
-We should also evaluate the classification accuracy of our model on unseen data. This can be done by using a test dataset or via a LOOCV approach. Since we've talked about the former approach in the frequentist section ([**here**](link%20to%20be%20added%20after%20embedded%20in%20the%20website)), in this section we would use the latter to illustrate the function `E_loo()`, which uses importance weights generated from the `loo()` function.
+We should also evaluate the classification accuracy of our model on unseen data. This can be done by using a test dataset or via a LOOCV approach. Since we've talked about the former approach in the frequentist section, here we would use the latter approach to illustrate the function `E_loo()`, which uses importance weights generated from the `loo()` function. Then we would compare the accuracy for the bayesian and frequentist models on the same test data using the former approach.
+
+
 
 ```{r}
-ploo = E_loo(preds, loo1$psis_object, type = "mean", log_ratios = -log_lik(post1))$value
+ploo = E_loo(preds, loo1$psis_object, type = "mean", log_ratios = -log_lik(post))$value
 round(mean(xor(ploo > 0.5, as.integer(d1$status == 0))),3)
 ```
 
@@ -435,38 +409,27 @@ In the plot above we can see the small difference in posterior predictive probab
 We can again use ROC and AUC to evaluate this model. First, we need to prepare a test data set. Here we are extracting data from the original data set that are not in the sample.
 
 ```{r}
-train <- d1
-test <- setdiff(d, train)
-predicted <- predict(post1, newdata=test)
+predicted <- predict(post, newdata=testing)
 ```
 
-Here's the ROC curve of our model on test data:
+Here's the ROC curve of our model on the testing data:
 
 ```{r}
-roc = roc(response = test$status, predictor = predicted)
+roc = roc(response = testing$status, predictor = predicted)
 ggroc(roc, legacy.axes = TRUE) +
   labs(x = 'False-positive rate', y = 'True-positive rate', title = 'Simulated ROC curve')
 ```
 
 ```{r}
-auc(test$status,predicted)
+auc(testing$status,predicted)
 ```
 
-Here we got an AUC score of 0.7052, which means there is about 70% chance that our model will be able to distinguish between positive class (paid) and negative class (defaulted).
+We got an AUC score of 0.7123, which is slightly higher than the one for the frequentist model (0.7094).
 
-### Conclusion
+### Discussion
 
-Same as the frequentist model suggests, loan amount is not considered to be a factor affecting the loan repayment status at all; the probability of loans getting repaid rather than not repaid is generally increasing over years, with $e^0.4-1\approx0.49$ (similar to 0.53 for the frequentist model) more adds each year; in terms of the continent where the loan transaction took place, Oceania has the highest odds ratio for the loan being repaid while Africa has the lowest odds ratio, followed by Europe. Besides Oceania and Europe which has highest coefficient but is not also large uncertainty intervals, Asia has the highest odds of loans being repaid ($e^1.2-e^0.7\approx 1.3$ higher than the odds for Americas and $e^1.2-1\approx 2.32$ higher than Africa).
+Among all the terms, continentAsia is the only one that has great effect on the response variable together with a super narrow uncertainty interval. We can safely conclude that borrowers in Asia are generally predicted to have a relatively high probability of fully repay the loan. For all the sectors, each level either has a wide uncertainty interval or a small posterior median, making it hard to conclude any significant insights. Male borrowers are predicted to be certainly less likely to repay the loan compared to female borrowers. 
 
-Contrary to what the frequentist model suggests, among all sectors, loans in the Housing sector has $1 - e^{-0.1} \approx 0.095$ less odds of being repaid than loans in the Agriculture sector which is the baseline category of `sector` variable in our model and has $e^0.5-e^{-0.1}\approx 0.74$ less odds of being repaid than loans in the Food sector. As for sex of the borrower(s), a male borrower or a male-only borrower group now has the highest odds ratio of repaying the loan, $e^0.1-1\approx 0.105$ more odds than a female borrower or a female-only borrower group and $e^0.1-e^{-0.4}\approx 0.435$ more odds than a borrower group that consists of both males and females.
+## Conclusion
 
-YOUR CONCLUSION COMPARING THE MODELS SHOULD NOT HAVE SO MANY NUMBERS BUT INSTEAD FOCUS ON THE BIG INSIGHTS AND COMPARISON OF MODEL FINDINGS AND MODEL PERFORMANCE BETWEEN FREQUENTIST AND BAYESIAN.
-
-### Save the Model
-
-Also, we can save our models in a folder so that RStudio doesn't need to go through the model fitting process every time we knit the document. Just load the models from where they are stored.
-
-```{r eval=FALSE, echo=FALSE}
-save(post1, file = "data/post1.RData")
-save(post0, file = "data/post0.RData")
-```
+Same for the frequentist model and bayesian model, loan amount is not considered to be a factor affecting the loan repayment status at all. The probability of loans getting repaid rather than not repaid is predicted to be increasing over years by both models, which is generally a good sign for the loan market as well as the economy. Both models suggests Oceania to have the highest odds ratio for the loan to be repaid while Africa has the lowest odds ratio, followed by Europe, Asia, America, and then Africa; they also have a high uncertainty on the coefficients for Oceania. Loans in the Personal Use sector is predicted to be the sector that has the lowest odds of being repaid, while Wholesale and Education are predicted to have the highest odds, by both models. While the frequentist model suggest a higher odds for female borrowers to repay the loan than borrower groups of mixed gender, the bayesian model suggests the opposite, but the difference is not statistically significant. When evaluating on the testing set, the bayesian model slightly outperforms the frequentist model, with an AUC score only 0.0029 higher.
