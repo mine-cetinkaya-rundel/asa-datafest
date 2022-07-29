@@ -18,8 +18,6 @@ website:
         text: Upcoming Events
       - href: resources.qmd
         text: Resources
-      - href: getting-started.qmd
-        text: Tutorials
       - href: contact.qmd
         text: Contact
 
