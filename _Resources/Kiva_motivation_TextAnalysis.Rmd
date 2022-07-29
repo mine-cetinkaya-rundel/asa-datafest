@@ -1,0 +1,413 @@
+---
+title: "Analysing Text Data to Understand Lender Motivation"
+author: "Aarushi Verma"
+date: "01/07/2022"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+------------------------------------------------------------------------
+
+## Introduction
+
+In this section we continue our analysis of part one of the prompt: motivations for lending. In the previous section we attempted to infer lender motivation from systematic differences in funded and non-funded borrowers; here we directly analyze the free responses provided by lenders using some techniques from text mining. Text mining is a machine learning technique which automates text parsing for the purpose of extracting information and generating insights about the content.
+
+Our data contains two relevant free text columns containing (i) the reasons lenders report for lending and (ii) the intended uses borrowers report for their requested loan amount. By looking at lender's reasons for making a loan we can directly observe their self-reported motivations. By looking at borrowers' intended uses of the loan amount for "funded" and "not funded" borrowers, we hope to identify specific words used by funded borrowers that might reveal additional information about lender preferences and motivations.
+
+## Setup
+
+### Importing required libraries
+
+Before we dive into the analysis, we need to import all the required packages.We use the text analysis packages for data cleaning, transformation and lemmatization. We also used some additional packages for visualization. The packages we used are:
+
+```{r libraries, warning=FALSE, echo=TRUE, message=FALSE}
+#text analysis packages
+library("tm")
+library("tidyverse")
+library("textstem")
+
+#visualization packages
+library("wordcloud")
+library("plotly")
+library("colorblindr")
+library("viridis")
+
+library("rmarkdown")
+library("readr")
+library("kableExtra")
+options(readr.show_col_types = FALSE)
+```
+
+### Reading the data
+
+We use the `lender_loans.csv` file for our analysis, which contains the following columns of interest:
+
+-   `loan_because` : free response indicating lender's reason for lending
+-   `use` : free response indicating a borrower's intended use (more flexible than `sector`)
+
+The data set presented below shows a few rows of these variables.
+
+```{r input_data, echo=TRUE, warning=FALSE, results='asis', message = FALSE}
+
+kiva_ll <- read_csv("data/lender_loans.csv")
+data_preview <- subset(kiva_ll, select=c("loan_id","loan_because","use","loan_amount"))
+
+#Specifying rows for which we have data to showcase various reasons provided by lenders for lending
+X <- (data_preview[c(133,165,177,235,298),]) 
+
+knitr::kable(X, "pipe")
+```
+
+Note that in the preview above, we selected a few particular observations. This was necessary because of the high proportion of missing values in the text columns. Before we proceed with the analysis, we look more closely at missing values.
+
+```{r missing, echo=TRUE, warning=FALSE, results='asis', message = FALSE}
+
+lender_missing <- sum(is.na(kiva_ll$loan_because))/nrow(kiva_ll)
+bor_missing <- sum(is.na(kiva_ll$use))/nrow(kiva_ll)
+
+sprintf("The proportion of missing values in loan_because column are %f ",round(lender_missing,2))
+sprintf("The proportion of missing values in use column is %f ",round(bor_missing,2))
+
+```
+
+TO UPDATE ASSUMPTIONS FOR DATA MISSINGNESS AND WHETHER IT IS MISSING AT RANDOM OR NOT
+
+## Analysis
+
+In this section, we process the aforementioned free text fields to understand lender motivation. We begin with lender text then move to borrower text. In each portion of the analysis we convert the text fields into corpora (plural for corpus - a format used for text analysis. It organize texts into datasets and is the format most convenient for the $\texttt{tm}$ package which we will be using), perform data cleaning, and text transformations, and visualize the processed data to generate insights relevant to the prompt.
+
+### Lender text analysis
+
+------------------------------------------------------------------------
+
+#### Creating a corpus
+
+Now that we've identified the relevant data, the first step towards text analysis is to clean the data and convert it to a corpus.
+
+Upon first inspection, we observe multiple special characters present which are not recognized by the typical `UTF-8` encoding of the file. Therefore we first encode the field using `latin1` encoding so that it can recognize these special characters.
+
+We also observe that each line in our data frame does not represent a unique lender or their reason for lending: if a specific lender lends to multiple borrowers, their reason for lending will reappear as many times in our data as well. This will sway the frequency of the words used. For the purpose of this analysis we will only count each lender once therefore, so that each lender is weighted equally rather than by the number of loans they fund. To accomplish this, we subset our data frame to only contain the unique `lender_ids` and their corresponding reasons for lending as captured in the column `loan_because`.
+
+```{r corpus, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+# To recognize special characters
+Encoding(kiva_ll$loan_because) <- "latin1" 
+
+loan_bec <- subset(kiva_ll, select=c("lender_id","loan_because"))
+loan_bec <- unique(loan_bec[ , c("lender_id", "loan_because")])
+
+# Convert input data to corpus
+corpus <- Corpus(VectorSource(as.vector(loan_bec$loan_because))) 
+```
+
+<br/>
+
+#### Data Transformation
+
+Once we have created our corpus, we transform our data via the following steps:
+
+1.  Removing all special characters and punctuation
+
+2.  Converting all text to lower case
+
+3.  Removing all numbers
+
+4.  Removing extra white spaces
+
+5.  Removing "stop words." Stop words refer to common words used in text which do not add any contextual value. For example: 'a','the','as', etc.
+
+By performing these steps, we are able to get rid of the 'noise' in the data. For example, by converting to lowercase we ensure that data is consistent for analysis. By removing stop words, we enable our text mining algorithm to focus mainly on key words present in the text which are relevant to us.
+
+```{r cleaning, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+#Define a function to replace characters with space
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+
+corpus <- tm_map(corpus, toSpace, "/")
+corpus <- tm_map(corpus, toSpace, "@")
+corpus <- tm_map(corpus, toSpace, "\\|")
+
+#Convert all text to lower case
+corpus <- tm_map(corpus, content_transformer(tolower))
+
+# Remove  numbers
+corpus <- tm_map(corpus, removeNumbers)
+
+# Remove english common stopwords
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
+# Remove punctuation
+corpus <- tm_map(corpus, removePunctuation)
+
+# Eliminate extra white spaces
+corpus <- tm_map(corpus, stripWhitespace)
+```
+
+<br/>
+
+#### Lemmatization
+
+Lemmatization is a method used in text analysis to remove the inflections and retain only the root or dictionary form of the word. This dictionary form of the word is referred to as the *lemma*. This is done by using morphological analysis. The function `lemmatize_strings` uses a lookup dictionary (Mechura's (2016) English lemmatization list available from the lexicon package) and reduces the strings to their lemma forms. Another method used in text analysis is Stemming. Stemming works by cutting off the affixes (prefix/ suffix). The algorithm looks at common prefixes and suffixes that may occur for a word and reduce it to its stem.
+
+In our analysis, we use lemmatization because stemming can discard useful information. In the following example, the vector `x` contains different forms of the word *purchase*. We see that when we stem, the suffix of each form of the word is reduced, yielding the same root word *purchas*. When we use lemmatization, our result is the lemma of the word and additional context is retained for the word *purchaser*.
+
+```{r}
+x <- c('purchase', 'purchased', 'purchaser', 'purchasing', 'purchases')
+
+stem_words(x)
+lemmatize_words(x)
+
+```
+
+```{r lemming, echo=TRUE, results='hide', message=FALSE, warning=FALSE }
+#Lemmatization
+corpus <-tm_map(corpus, lemmatize_strings)
+```
+
+<br/>
+
+#### Word Frequency Matrix
+
+Now that the data is prepared, we begin our analysis with a word frequency matrix, which displays the frequency of occurrence for each word in our data.
+
+For this analysis we consider only the raw count of each term, however alternative weighting and normalization schemes are possible in the package as well. We convert the matrix to a data frame for ease of manipulation and sort it in terms of decreasing frequency.
+
+```{r matrix, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+# Build a term-document matrix
+TextDoc_dtm <- TermDocumentMatrix(corpus)
+
+# Convert data type to matrix
+dtm_m <- as.matrix(TextDoc_dtm)
+
+# Sort by descending value of frequency
+dtm_v <- sort(rowSums(dtm_m),decreasing=TRUE)
+
+#Convert to dataframe
+dtm_d <- data.frame(word = names(dtm_v),freq=dtm_v)
+head(dtm_d)
+
+```
+
+<br/>
+
+#### Visualizing the data
+
+**Bar Chart of top 10 most frequent words**
+
+Once we have our word frequency data frame we can visualize it. First we plot a bar chart to see the 10 most frequent words used by lenders. From our bar chart we see that the most commonly used word is *help*, with a frequency of 869, which is nearly twice that of the next most commonly used word, *people* . This suggests that an altruistic desire to help entrepreneurs may be a significant motivation for Kiva lenders.
+
+```{r barchart, echo=TRUE, fig.align='center',warning=FALSE}
+# Plot the most frequent words
+
+ggplot(dtm_d[1:10,])+ aes(x = reorder(word, -freq), y=freq)+
+       geom_bar(stat="identity", fill = "blue", alpha=.6, with = 0.5)+
+  xlab("Word")+
+  ylab("Frequency")+
+  theme(axis.text.x=element_text(size=12))+
+  ggtitle("Top 10 most frequent words [Lenders]")
+
+```
+
+**Word Cloud**
+
+A word cloud is visual representation of words in the form of a cluster where the size of the word represents its frequency. For our word cloud, we plot all the words in the data set which have a minimum frequency of 5. While the interpretation is similar to the that of the bar chart, this alternative visualization allows us to see more words than could reasonably fit in a bar chart.
+
+```{r wordcloud, echo= TRUE, fig.align='center'}
+set.seed(1234)
+wordcloud(words = dtm_d$word, freq = dtm_d$freq, min.freq = 5,
+          max.words=100, random.order=FALSE, rot.per=0.40,scale=c(4,0.75),
+          colors=brewer.pal(8, "Dark2"))
+```
+
+In analyzing the text fields reported by lenders, we find that the most common word used is *help*. From the word cloud we observe that most of the words used by lenders seem to be in the sphere of helping people, such as *give*, *make* and *difference* indicating that lenders sign up on Kiva provide support and be of service to entrepreneurs. While help-related words dominate, there ar many less frequently used words, suggesting heterogeneity of lender motivation. Words such as *bless*, *can*, *able* and *fortunate* suggest that lender's are motivated by the abundance of resources at their disposal and are driven to share these resources. Other words such as *empower*, *community*, *succeed* and *achieve* indicate a motivation that stems from a larger picture of society. The choice of words implies their motivation to enable communities to increase control over their lives by helping them become more independent. We may also note that except for *poverty* most of the words used have positive connotations suggesting that lenders tend to focus on the possibility to do good rather than guilt or concern.
+
+### Borrower text analysis
+
+------------------------------------------------------------------------
+
+Next, we look for systematic differences in the words used by funded and non-funded borrowers when describing their intended use for the loans. This may suggest lender preferences and motivations. In this portion of the analysis, we rely on the `status` column, which indicates the current status of the loan, as well as the `use` column, which indicates the borrower's intended use for the requested loan amount.
+
+To get a better idea of how many loans are funded, we look at the unique values in the `status` column and the number of loans associated with each value. Further, we use these values to create an indicator variable for whether a loan has been funded or not.
+
+```{r status, echo= TRUE, messgae = FALSE}
+
+#Looking at unique values and respective loan count in status column
+status_table <- kiva_ll %>% 
+  group_by(status) %>% 
+  summarize(count = length(unique(loan_id))) %>% 
+  arrange(desc(count))
+
+status_table %>% kbl(caption = "Value counts of status column",col.names=c("Status", "No. of loans") ) %>% 
+  kable_classic(bootstrap_options ="striped",full_width = F, html_font = "helvetica",position = "center")
+```
+
+FIX ENTRIES TO BE WORDS NOT VARNAMES - THOUGHT I PUT THIS IN THE LAST EDIT
+
+The status column contains 7 unique values. We look at the data dictionary and Kiva website to get a better idea of what each term means. Based on that we make the classification of these terms to our 2 classes funded and not-funded:
+
+-   Funded: $\texttt{funded, in_repayment, paid, defaulted, refunded}$
+
+-   Not Funded: $\texttt{expired, fundraising}$
+
+To define the funded category, we include status values which indicate that a loan has been funded already, irrespective of what the current status of the loan is. To define the non-funded category, we include the status values which indicate that a loan was never funded or is in the process of being funded.
+
+```{r funding indicator,echo= TRUE, message = FALSE}
+
+#creating a vector for values which are associated with funded loans
+funded_vec <- c("paid","in_repayment","funded","defaulted", "refunded")
+
+#create indicator variable for Funded or not funded loans
+funding_stat <- kiva_ll %>% 
+  mutate(funding_status = if_else(kiva_ll$status %in% funded_vec, "Funded","Not Funded"))
+
+#Create dataframe with unique borrower id, use for loan and corresponding funding status
+loan_use <- unique(funding_stat[ , c("borrower_image_id", "use","funding_status")])
+```
+
+We transform our dataset to create a `funding_status` indicator variable using the definitions above. Next, we separate the data into two data frames - Funded loans and Not funded loans. We then perform the same text analysis steps as we did in the lenders section on the `use` column.
+
+```{r borrower cleaning, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+Encoding(loan_use$use) <- "latin1" #To recognize special characters
+
+funded_loan <- subset(loan_use,loan_use$funding_status == "Funded")
+notfunded_loan <- subset(loan_use,loan_use$funding_status == "Not Funded")
+
+funded_corpus_use <- Corpus(VectorSource(as.vector(funded_loan$use)))# Convert input data to a corpus
+notfunded_corpus_use <- Corpus(VectorSource(as.vector(notfunded_loan$use)))
+
+funded_corpus_use <- tm_map(funded_corpus_use, toSpace, "/")
+funded_corpus_use <- tm_map(funded_corpus_use, toSpace, "@")
+funded_corpus_use <- tm_map(funded_corpus_use, toSpace, "\\|")
+
+notfunded_corpus_use <- tm_map(notfunded_corpus_use, toSpace, "/")
+notfunded_corpus_use <- tm_map(notfunded_corpus_use, toSpace, "@")
+notfunded_corpus_use <- tm_map(notfunded_corpus_use, toSpace, "\\|")
+
+
+#Convert all text to lower case
+funded_corpus_use <- tm_map(funded_corpus_use, content_transformer(tolower))
+notfunded_corpus_use <- tm_map(notfunded_corpus_use, content_transformer(tolower))
+
+# Remove  numbers
+funded_corpus_use <- tm_map(funded_corpus_use, removeNumbers)
+notfunded_corpus_use <- tm_map(notfunded_corpus_use, removeNumbers)
+
+# Remove english common stopwords
+funded_corpus_use <- tm_map(funded_corpus_use, removeWords, stopwords("english"))
+notfunded_corpus_use <- tm_map(notfunded_corpus_use, removeWords, stopwords("english"))
+
+# Remove punctuation
+funded_corpus_use <- tm_map(funded_corpus_use, removePunctuation)
+notfunded_corpus_use <- tm_map(notfunded_corpus_use, removePunctuation)
+
+# Eliminate extra white spaces
+funded_corpus_use <- tm_map(funded_corpus_use, stripWhitespace)
+notfunded_corpus_use <- tm_map(notfunded_corpus_use, stripWhitespace)
+
+#Lemmatize strings
+funded_corpus_use <-tm_map(funded_corpus_use, lemmatize_strings)
+notfunded_corpus_use <-tm_map(notfunded_corpus_use, lemmatize_strings)
+```
+
+```{r use matrix, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+# Build a term-document matrix
+funded_TextDoc_dtm <- TermDocumentMatrix(funded_corpus_use)
+notfunded_TextDoc_dtm <- TermDocumentMatrix(notfunded_corpus_use)
+
+# Convert data type to matrix
+funded_dtm_m <- as.matrix(funded_TextDoc_dtm)
+notfunded_dtm_m <- as.matrix(notfunded_TextDoc_dtm)
+
+# Sort by descending value of frequency
+funded_dtm_v <- sort(rowSums(funded_dtm_m),decreasing=TRUE)
+notfunded_dtm_v <- sort(rowSums(notfunded_dtm_m),decreasing=TRUE)
+
+#Convert to dataframe
+funded_dtm_d <- data.frame(word = names(funded_dtm_v),freq=funded_dtm_v)
+notfunded_dtm_d <- data.frame(word = names(notfunded_dtm_v),freq=notfunded_dtm_v)
+
+```
+
+**Bar Chart**
+
+First we plot two bar charts to visualize and compare the top 10 most frequently used words by borrowers whose loans have been funded and not funded.
+
+```{r borrower barchart, echo=FALSE, warning=FALSE, fig.show='hold'}
+# Plot the most frequent words
+
+par(mfrow=c(1,1)) 
+
+#Borrower Bar Chart of top 10 frequent words
+ggplot(funded_dtm_d[1:10,])+ aes(x = reorder(word, +freq), y=freq)+
+       geom_bar(stat="identity", fill = "blue", alpha=.6,with = 0.5)+
+  xlab("Word")+
+  ylab("Frequency")+
+  coord_flip()+
+  theme(axis.text.x=element_text(size=12), axis.text.y=element_text(size=12))+
+  ggtitle("Top 10 most frequent words in funded loans")
+
+ggplot(notfunded_dtm_d[1:10,])+ aes(x = reorder(word, +freq), y=freq)+
+       geom_bar(stat="identity", fill = "blue", alpha=.6,with = 0.5)+
+  xlab("Word")+
+  ylab("Frequency")+
+  coord_flip()+
+  theme(axis.text.x=element_text(size=12), axis.text.y=element_text(size=12))+
+  ggtitle("Top 10 most frequent words in not funded loans")
+
+```
+
+In comparing these bar charts, we note that the top 3 words for both funded and not funded loans are the same - *buy*, *purchase* and *business*. The top 2 words also have the approximately more than double the frequency of the others. This implies that most borrowers are applying for loans to be able to source the raw materials for their businesses, regardless of ultimate funding status.
+
+Among the remaining words we see words like *rice*, *fertilizer,* and *supply* in funded loans whereas these are not present in the not funded loans. These words indicate specificity in borrowers' intended use of the loan amount and further have a connotation of productivity. This suggests that lenders favor borrowers that emphasize what they hope to achieve and articulate a concrete plan. For not funded loans we see the words *food*, *additional* and *pay* which are not present in the funded loans chart. These words have a connotation of deprivation, suggesting that lenders may be less inclined to fund borrowers that communicate a desperate situation.
+
+**Word Cloud**
+
+Next, we create two word clouds, one representing the most common words used by the borrowers whose loans have been funded and the other representing loans that have not been funded. We plot all the words in the data set which have a minimum frequency of 5. While the bar chart displays the top 10 most frequent words, the word cloud gives us a more holistic view of the words used by borrowers when requesting for loans.
+
+```{r, echo=TRUE, header=FALSE, message = FALSE, }
+#Table to see no. of funded and not funded loans
+
+funding_loans_count <- funding_stat %>% group_by(funding_status) %>% summarize(loan_count = length(unique(loan_id)))
+
+funding_loans_count %>% kbl(caption = "Value Counts of funding status",col.names=c("Funding status", "No. of loans")) %>% 
+  kable_classic(bootstrap_options ="striped",full_width = F, html_font = "helvetica",position = "left")
+
+```
+
+```{r, echo=TRUE,header= FALSE, message = FALSE, warning = FALSE}
+#Borrower Wordcloud - Funded Loans
+set.seed(1234)
+
+
+layout(matrix(c(1, 2), nrow=2), heights=c(1, 4))
+par(mar=rep(0, 4))
+plot.new()
+text(x=0.5, y=0.5, "Wordcloud for Funded Loans")
+wordcloud(words = funded_dtm_d$word, freq = funded_dtm_d$freq, min.freq = 5, main ="Wordcloud [Borrowers]",random.order=FALSE, rot.per=0.40,scale=c(4,0.75),
+          colors=brewer.pal(2, "Dark2"))
+```
+
+```{r, echo=TRUE,header= FALSE, message = FALSE, warning = FALSE}
+#Borrower Wordcloud - Not Funded Loans
+set.seed(1234)
+
+layout(matrix(c(1, 2), nrow=2), heights=c(1, 4))
+par(mar=rep(0, 4))
+plot.new()
+text(x=0.5, y=0.5, "Wordcloud for Not Funded Loans")
+wordcloud(words = notfunded_dtm_d$word, freq = notfunded_dtm_d$freq, min.freq = 5, main ="Wordcloud [Borrowers]",random.order=FALSE, rot.per=0.40,scale=c(4,0.75),
+          colors=brewer.pal(6, "Dark2"))
+
+```
+
+The biggest difference in the wordclouds between funded and not funded loans is the variety of words depicted in the funded loans word cloud. This is due to the fact that most of the observations in the dataset correspond to funded loans. This offers a larger variety of words among funded loans. We see that the variation in sizes in the funded wordcloud is also limited indicating that there is more variety in the words used rather than certain words used which may motivate lenders. For not funded loans, we see fewer words but they do share similarity to words present in the funded loans word cloud as well.
+
+## Conclusion
+
+In this tutorial, we analyzed free text fields containing quotes from both lenders and borrowers to understand lender preferences and motivation. We observe that lenders tend to report a desire to help, and hence may be motivated by altruism. Further, we observe that the terms in their statements tend to have a positive connotation, suggesting they may more often be motivated by a sense of abundance and a desire to "do good" rather than guilt or concern.
+
+Looking at the text field provided by borrowers, we observe that most borrowers report seeking out loans in order to source raw materials or to purchase resources for their business. When we separate the analysis on the basis of funding status, we note that while there is a lot of overlap, funded borrowers are more likely to use words that communicate productivity and a concrete plan, whereas non-funded borrowers are more likely to use words that communicate deprivation. Combining this with the findings of the lender-based text mining, we conclude that lenders are motivated by a positive desire to help and prefer borrowers which communicate optimism and potential rather than desperation. This could indicate that lenders prefer loan applications which communicate a positive mindset - or simply that they hope to get their money back and see productivity-oriented applications as a safer bet.
