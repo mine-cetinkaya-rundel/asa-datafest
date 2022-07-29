@@ -1,6 +1,5 @@
 ---
 title: "Exploratory Data Analysis"
-date: "07/10/2022"
 output: 
   html_document:
   toc: true
@@ -9,7 +8,7 @@ output:
 
 ## Introduction and set-up
 
-In this section of the tutorial, we guide you through the process of Exploratory Data Analysis (EDA) using the Kiva dataset and prompt introduced in the **Getting Started** section. The purpose of EDA is to perform initial investigation on the data, look for interesting trends, relationships, and anomalies through the use of descriptive statistics and data visualization. The insights generated through this stage will motivate and inspire the subsequent analysis, modelling, and statistical tests performed at the next phase in your DataFest journey.
+In this section of the tutorial, we guide you through the process of Exploratory Data Analysis (EDA) using the Kiva dataset and prompt introduced in the **Getting Started** section. The purpose of EDA is to perform initial investigation on the data, look for interesting trends, relationships, and anomalies through the use of descriptive statistics and data visualization. The insights generated from this stage will motivate and inspire the subsequent analysis, modelling, and statistical tests performed at the next phase in your DataFest journey.
 
 ### Loading packages
 
@@ -43,7 +42,7 @@ str(loans)
 
 Using the `str` function, we can see that in `lender_loans`, we have 125,580 observations of 51 variables; in `lenders`, we have 15,000 observations of 18 variables; and in `loans`, we have 97,183 observations of 75 variables. We can also see the variable names, from which we can narrow down our scope to the variables that are relevant to the prompt for further exploration and analysis.
 
-To investigate lenders' motivations, we focus on the files `lender_loans` and `lenders`. Potentially useful lender-level variables include `whereabouts` (introductory description about lenders), `country_code`(lenders' country), `occupation` (lenders' occupation), as well as the time that each lender has been a member of Kiva (variables start with `member_since`). The variable `loan_because` will be particularly revealing since it contains direct quotes from lenders related to their reasons for lending. However, because it contains complex free text data, it requires different analytical approaches that will be covered later in the **Text Analysis** section.
+To investigate lenders' motivations, we focus on the files `lender_loans` and `lenders`. Potentially useful lender-level variables include `country_code` (lenders' country), `occupation` (lenders' occupation), as well as the time that each lender has been a member of Kiva (variables start with `member_since`). The variable `loan_because` will be particularly revealing since it contains direct quotes from lenders related to their reasons for lending. However, because it contains complex free text data, it requires different analytical approaches that will be covered later in the **Text Analysis** section.
 
 Variables that may contribute to loan repayment include `loan_amount`, `sector`, and `location.code` (borrowers' country). A larger `loan_amount` may be associated with higher risk enterprise. Certain `sectors` may be more profitable than others. The macroeconomic environment of a location may be associated with the success of borrowers.
 
@@ -51,7 +50,7 @@ There are also some variables that may be relevant to both parts of the prompt, 
 
 ## EDA
 
-We begin by visualizing the distribution of potentially important variables .
+We begin by visualizing the distribution of potentially important variables.
 
 ### -- LOOKING AT THE BIG PICTURE --
 
@@ -214,13 +213,15 @@ ggplot(data = country_decoded, aes(x = year, y = log(loan_amount), color = count
   ggtitle("Top 10 lender countries by total loan amount from 2005 to 2012")
 ```
 
-Here, we visualize loans originating in the top ten lender countries over time. In this case, we can improve our visualization by logging the loan amount. This is because US has a significantly higher total loan amount compared to other countries, due to the fact that Kiva is based in the US. As a result, plotting data in the raw scale makes it difficult to distinguish between all other lenders. We note that all of the top ten lender countries have increased their loan amount over time. While the majority of top lenders are high income countries, with the exception of the Philippines. We might expect that lender motivation may differ in high and low countries, and so this is something to bear in mind and we proceed with the lender-focused analysis.
+Here, we visualize loans originating in the top ten lender countries over time. In this case, we can improve our visualization by taking the logarithm of the loan amount. This is because the US has a significantly higher total loan amount compared to other countries, due to the fact that Kiva is based in the US. As a result, plotting data in the raw scale makes it difficult to distinguish between all other lenders. We note that all of the top ten lender countries have increased their loan amount over time. While the majority of top lenders are high income countries, with the exception of the Philippines. We might expect that lender motivation may differ in high and low countries, and so this is something to bear in mind and we proceed with the lender-focused analysis.
 
 ### -- Part 1: Lender Motivation --
 
 To understand lender motivation, we begin with some background easily located via Kiva's webiste: Kiva provides a platform where borrowers post their credit needs, and lenders choose how much and to whom they lend. Hence, the decision to lend to a specific borrower is purely up to lenders and may reveal their preferences and motivations. Further, we might look at the characteristics of funded and non-funded borrowers in hopes of identifying patterns.
 
-We further explore the heterogeneity in lending practices by identifying the top recipients in terms of the total dollar value of loans received for each of the top lenders. In the table below Borrower 1 refers to the top recipient country, Borrower 2 refers to the second largest recipient, and so on. Overall, while Peru and Uganda are popular recipient countries, a variety of countries from Asia, Africa, and South America show up as well. The table reveals that on aggregate, lenders do not prefer borrowers from their own countries. However, the top recipient is often in a region formerly colonized or geographically close to the each lender nation. These historical and geographical connections suggest a possible avenue for further analysis of lender motivation.
+#### Regional lending trends
+
+We explore the heterogeneity in lending practices by identifying the top recipient countries ( as determined by the total dollar value of loans received) for each of the top lenders. In the table below, Borrower 1 refers to the top recipient country, Borrower 2 refers to the second largest recipient, and so on. Overall, while Peru and Uganda are popular recipient countries, a variety of countries from Asia, Africa, and South America show up as well. The table reveals that on aggregate, lenders do not prefer borrowers from their own countries. However, the top recipient is often in a region formerly colonized or geographically close to the each lender nation. These historical and geographical connections suggest a possible avenue for further analysis of lender motivation.
 
 ```{r Lenders top borrowers table}
 # Subset the data set for top 10 lender countries
@@ -248,6 +249,8 @@ top_lender_borrow <- aggregate(top_lenders$loan_amount, by = list(lender_country
 # Format and output the table
 knitr::kable(top_lender_borrow, "pipe")
 ```
+
+#### Sector and gender of borrowers
 
 Next, we look at the composition of borrowers to get a better idea of which loans are funded.
 
@@ -298,7 +301,7 @@ ggplot(sec_gender_loan) +
   ggtitle("Sector vs Loan Amount by Gender")
 ```
 
-Overall, the total loan amount of female borrowers (58.54%) exceeds that of male borrowers (41.45%). Similarly, in most sectors there is a greater proportion of female borrowers. However, in Transportation, Construction, and Manufacturing, males receive a higher loan amount than female, while in Agriculture and Services, the loan amounts received by males and females is comparable. While we cannot conclude that these trends are due to lender preference, these differences suggest avenues for further exploration. For example, we might design our analysis to see if certain sectors are more likely to be funded than others, or if female applicants have a greater probability of having their loan funded. If so, this could suggest the priorities of lenders.
+Overall, the total loan amount of female borrowers (58.54%) exceeds that of male borrowers (41.45%). Similarly, female borrowers receive the majority of loan dollars. However, in Transportation, Construction, and Manufacturing, males receive a higher loan amount than female, while in Agriculture and Services, the loan amounts received by males and females are comparable. While we cannot conclude that these trends are due to lender preference, these differences suggest avenues for further exploration. For example, we might design our analysis to see if certain sectors are more likely to be funded than others, or if female applicants have a greater probability of having their loan funded. If so, this could suggest the priorities of lenders.
 
 ### -- Part 2: Repayment Factors --
 
@@ -349,6 +352,39 @@ ggplot(by_sector) +
 ```
 
 The graph above shows that for most sectors, paid loans well exceed unpaid loans. Of the top five sectors in terms of loan amount, Agriculture has the highest proportion of unpaid loans, around 30%. Of all sectors, Housing and Education have the highest unpaid loans, nearly 50%. Arts has the lowest proportion of unpaid loans, about 18%. Hence, sector seems likely to be an important variable to include in subsequent analysis of loan repayment.
+
+IT SEEMS WEIRD TO HAVE ONLY ONE PLOT IN THIS SECTION WHEN YOU HAVE MULTIPLE FOR LENDER MOTIVATION. HERE'S THE BASIC CODE FOR A SIDE BY SIDE BAR GRAPH WHICH WILL ALLOW YOU TO COMMENT THE DEFAULT RATE IS GENERALLY VERY LOW, AND NOTE SECTORS WHERE WOMEN HAVE A LOWER DEFAULT RATE THAN MEN (E.G. MANUFACTURING AND HOUSING), HIGHER, SIMILAR...
+
+ALSO NOTE THAT THE DEFAULT RATE IS IDENTICALLY ZERO IN SOME SECTORS FOR SOME GENDERS
+
+YOU CAN EXPERIMENT WITH SORTING THE BARS DIFFERENTLY. CURRENTLY I JUST LOOK AT THE TOP TEN SECTORS BUT YOU CAN CHANGE THAT BY REMOVING THE SUBSETTING IN loans_temp[1:10, ]
+
+```{r}
+# Summarize default percent by gender and sector: exclude group loans
+loans_df <- loans %>% 
+  filter(borrower_m_count < 2, borrower_f_count<2, 
+         (status== "defaulted" | status=="paid")) %>%
+  mutate(borrower_female = ifelse(borrower_f_count ==1, "Female", "Male")) %>%
+  group_by(sector, borrower_female) %>%
+  dplyr::summarize(default_rate = sum(status == "defaulted")/ n(), 
+                   n_borrowers = n()) 
+loans_temp <- loans_df %>%
+  ungroup(borrower_female) %>%
+  dplyr::summarise(max_default_rate = max(default_rate), 
+                   total_n_borrowers = sum(n_borrowers)) %>%
+  arrange(-total_n_borrowers)
+
+left_join(loans_temp[1:10, ], loans_df,  by = "sector") %>%
+ggplot(aes(x = reorder(sector, max_default_rate), y = default_rate, fill = as.factor(borrower_female))) +
+  geom_bar(stat = "identity", position = position_dodge())  + 
+  coord_flip() + 
+  scale_fill_viridis(discrete = TRUE) + 
+  labs(title = "Default rate by sector and gender", y = "Loan default rate", 
+       x = "", fill = "Borrower sex")
+
+
+
+```
 
 ### Conclusion
 
