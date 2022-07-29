@@ -15,9 +15,11 @@ margin-top: 0px
 
 <!-- ::: -->
 
-Welcome to DataFest!
+<!-- ::: column-page -->
+<!-- Welcome to DataFest! -->
 
-To learn more about the history of DataFest, take a look at our interactive dashboard.
+<!-- To learn more about the history of DataFest, take a look at our interactive dashboard. -->
+<!-- ::: -->
 
 ::: column-screen
 ```{=html}
