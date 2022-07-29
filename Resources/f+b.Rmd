@@ -26,15 +26,15 @@ Next, in order to perform our statistical analysis, we load all the packages nee
 ```{r}
 library(tidyverse)
 library(loo)
-library(jtools)
 library(countrycode)
-library(knitr)
+library(broom)
+library(kableExtra)
 library(pROC)
 library(rstanarm)
 library(bayesplot)
 ```
 
-There are eight core $\texttt{Tidyverse}$ packages namely $\texttt{ggplot2}$, $\texttt{dplyr}$, $\texttt{tidyr}$, $\texttt{readr}$, $\texttt{purrr}$, $\texttt{tibble}$, $\texttt{stringr}$, and $\texttt{forcats}$. In our analysis we are using $\texttt{dplyr}$ for data manipulations and $\texttt{ggplot2}$ for graphics. The $\texttt{loo}$ package allows us to compute efficient approximate leave-one-out cross-validation for fitted Bayesian models. $\texttt{jtools}$ provides a collection of tools for more efficiently presenting the results of regression analyses. $\texttt{pROC}$ is for displaying and analyzing ROC curves. $\texttt{rstanarm}$ is an appendage to the $\texttt{rstan}$ package, the R interface to Stan which features an expressive probabilistic programming language for specifying Bayesian models backed by extensive math and algorithm libraries to support automated computation. The $\texttt{bayesplot}$ package offers a variety of plots of posterior draws, visual MCMC diagnostics, and graphical posterior predictive checkings.
+There are eight core $\texttt{Tidyverse}$ packages namely $\texttt{ggplot2}$, $\texttt{dplyr}$, $\texttt{tidyr}$, $\texttt{readr}$, $\texttt{purrr}$, $\texttt{tibble}$, $\texttt{stringr}$, and $\texttt{forcats}$. In our analysis we are using $\texttt{dplyr}$ for data manipulations and $\texttt{ggplot2}$ for graphics. The $\texttt{loo}$ package allows us to compute efficient approximate leave-one-out cross-validation for fitted Bayesian models. $\texttt{pROC}$ is for displaying and analyzing ROC curves. $\texttt{rstanarm}$ is an appendage to the $\texttt{rstan}$ package, the R interface to Stan which features an expressive probabilistic programming language for specifying Bayesian models backed by extensive math and algorithm libraries to support automated computation. The $\texttt{bayesplot}$ package offers a variety of plots of posterior draws, visual MCMC diagnostics, and graphical posterior predictive checkings. Packages $\texttt{broom}$ and $\texttt{kableExtra}$ are used here to display messy output of models into clear tables.
 
 ```{r eval=FALSE, echo=FALSE}
 percent <- training %>% 
@@ -229,28 +229,36 @@ Here we specify the family to be binomial and the link function to be logit so t
 To identify variables that are important in explaining variation in the response, we perform model selection using the `step()` function. Specifying "direction="both"" tells R to perform both forward and backward selections. Forward selection here starts with an intercept-only model and adds variables to it, until some stopping criterion is met. Contrarily, backward selection starts with a full model with all the variables included and then excludes variables from that set until some stopping criterion is met. The default selection criterion is $\mathrm{AIC}$: from the current model, it drops or adds the one variable that leads to the best $\mathrm{AIC}$ improvement (smallest $\mathrm{AIC}$).
 
 ```{r}
-step(model, direction="both",trace=FALSE)
+forback <- step(model, direction="both",trace=FALSE)
+names(forback$model)
 ```
 
-The variables selected here are all except `time`. We dropped the `time` variable from our model. The final model is then:
+The selection results are stored in the `forback` list, and we can then display only the names of selected variables instead of the whole output by calling `names(forback$model)`. The variables selected are all except `time`. We dropped the `time` variable from our model. The final model is then:
 
 ```{r}
+set.seed(0)
 final <- glm(status ~ loan_amount + sector + posted_yr + continent + sex, data = training, family = "binomial"(link = "logit")) 
 ```
 
 ### Results
 
-We now look at a summary of the model output using the `summ()` function from the $\texttt{jtools}$ package:
+We can look at the summary of the model output using `tidy()` along with functions in the $\texttt{kableExtra}$ package. The table is scrollable. 
 
 ```{r}
-summ(final)
+tidy(final) %>% 
+  kable(digits = 2) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover")) %>% 
+  kable_paper() %>%
+  scroll_box(width = "100%", height = "200px")
 ```
+
+\  
 
 A brief look at the output would tell us that the term `continentOceania` have coefficients considerably larger than others but in the meantime have a p-value close to 1. A p-value measures the probability of obtaining the observed results, assuming that the null hypothesis is true. The lower the p-value, the greater the statistical significance of the observed difference. Thus, with p-values close to 1, these two terms are not considered statistically significant. An intuitive reason for terms with high p-values would be that the number of observations that fall into those categories accounts for only a very small portion of the data. 
 
-Interpreting the coefficients in a logistic regression is a little less straight-forward than in linear regression, but still quite simple. For example, the coefficient for `posted_yr` is "0.44", which means that for a given year when the loan is posted, the expected odds of the loan getting repaid is $e^{0.44}\approx1.55$ times the odds of the loan getting repaid if the loan is posted in the previous year. 
+Interpreting the coefficients in a logistic regression is a little less straight-forward than in linear regression, but still quite simple. For example, the coefficient for `posted_yr` is "0.44", which means that for a given year when the loan is posted, the expected odds of the loan getting repaid is $e^{0.50}\approx1.65$ times the odds of the loan getting repaid if the loan is posted in the previous year. 
 
-Among all sectors, a loan in the Education sector has the highest odds of getting repaid, while loans in the Personal Use sector are the least likely to be repaid. Loans in the Housing sector has $\frac{e^{0.63}}{e^{0.52}} \approx 1.116$ times the odds for loans in the Food sector to be repaid. In terms of the continent where the loan transaction took place, besides Oceania which has highest coefficient but is not statistically significant, Europe is the continent where loans generally have the highest odds of being repaid ($e^{3.47}-e^{1.51}\approx 7.1$ times the odds for Asia, 15.33 times the odds for Americas, and 32.14 times the odds for Africa). As for the sex of the borrower(s), a female borrower or a female-only borrower group has the odds of repaying the loan  $\frac{1}{e^{-0.22}}\approx 1.24$ times that for a male borrower or a male-only borrower group.
+Among all sectors, a loan in the Education sector has the highest odds of getting repaid, while loans in the Personal Use sector are the least likely to be repaid. Loans in the Housing sector has $\frac{e^{0.67}}{e^{0.61}} \approx 1.06$ times the odds for loans in the Food sector to be repaid. In terms of the continent where the loan transaction took place, besides Oceania which has highest coefficient but is not statistically significant, Europe is the continent where loans generally have the highest odds of being repaid ($\frac{e^{3.63}}{e^{1.48}}\approx 8.58$ times the odds for Asia, 19.11 times the odds for Americas, and 37.71 times the odds for Africa). As for the sex of the borrower(s), a female borrower or a female-only borrower group has the odds of repaying the loan  $\frac{1}{e^{-0.131}}\approx 1.14$ times that for a male borrower or a male-only borrower group.
 
 ### Model Evaluation
 
@@ -269,7 +277,7 @@ As we can see from the graph, the curve is increasing in both directions. This i
 auc(testing$status,predicted1)
 ```
 
-Here we got an AUC score of 0.7094, which means there is about 70% chance that our model will be able to distinguish between positive class (paid) and negative class (defaulted). In general, an AUC of 0.5 suggests no discrimination, 0.7 to 0.8 is considered acceptable, 0.8 to 0.9 is considered excellent, and more than 0.9 is considered outstanding.
+Here we got an AUC score of 0.7008, which means there is about 70% chance that our model will be able to distinguish between positive class (paid) and negative class (defaulted). In general, an AUC of 0.5 suggests no discrimination, 0.7 to 0.8 is considered acceptable, 0.8 to 0.9 is considered excellent, and more than 0.9 is considered outstanding.
 
 ### Discussion 
 
@@ -435,7 +443,7 @@ ggroc(roc, legacy.axes = TRUE) +
 auc(testing$status,predicted)
 ```
 
-We got an AUC score of 0.7097, which is only slightly higher than the one for the frequentist model (0.7094).
+We got an AUC score of 0.7097, which is only slightly higher than the one for the frequentist model (0.7008).
 
 ### Discussion
 
@@ -443,4 +451,4 @@ Among all the terms, continentAsia is the only one that has great effect on the 
 
 ## Conclusion
 
-Same for the frequentist model and bayesian model, loan amount is not considered to be a factor affecting the loan repayment status at all. The probability of loans getting repaid rather than not repaid is predicted to be increasing over years by both models, which is generally a good sign for the loan market as well as the economy. Both models suggests Oceania to have the highest odds ratio for the loan to be repaid while Africa has the lowest odds ratio, followed by Europe, Asia, America, and then Africa; they also have a high uncertainty on the coefficients for Oceania. Loans in the Personal Use sector is predicted to be the sector that has the lowest odds of being repaid, while Wholesale and Education are predicted to have the highest odds, by both models. While the frequentist model suggest a higher odds for female borrowers to repay the loan than borrower groups of mixed gender, the bayesian model suggests the opposite, but the difference is not statistically significant. When evaluating on the testing set, the bayesian model slightly outperforms the frequentist model, with an AUC score only 0.0003 higher.
+Same for the frequentist model and bayesian model, loan amount is not considered to be a factor affecting the loan repayment status at all. The probability of loans getting repaid rather than not repaid is predicted to be increasing over years by both models, which is generally a good sign for the loan market as well as the economy. Both models suggests Oceania to have the highest odds ratio for the loan to be repaid while Africa has the lowest odds ratio, followed by Europe, Asia, America, and then Africa; they also have a high uncertainty on the coefficients for Oceania. Loans in the Personal Use sector is predicted to be the sector that has the lowest odds of being repaid, while Wholesale and Education are predicted to have the highest odds, by both models. While the frequentist model suggest a higher odds for female borrowers to repay the loan than borrower groups of mixed gender, the bayesian model suggests the opposite, but the difference is not statistically significant. When evaluating on the testing set, the bayesian model slightly outperforms the frequentist model, with an AUC score only about 0.009 higher.
