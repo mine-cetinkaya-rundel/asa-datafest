@@ -1,0 +1,17 @@
+---
+title: "Resources"
+editor: visual
+sidebar: false
+---
+
+## Code repository, version control, and collaboration
+
+-   GitHub: [https://www.github.com](https://www.github.com/)
+
+-   *Happy Git with R*: <https://happygitwithr.com/>
+
+## R and RStudio
+
+-   R download: [https://cran.r-project.org/bin/windows/base/](https://cran.r-project.org/bin/windows/base/)
+
+-   R Shiny download: [https://www.rstudio.com/products/rstudio/download/](https://www.rstudio.com/products/rstudio/download/)

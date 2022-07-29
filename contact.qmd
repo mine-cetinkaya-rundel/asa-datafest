@@ -1,0 +1,8 @@
+---
+title: "Contact"
+sidebar: false
+---
+
+If you are faculty wanting to host Datafest contact Rob Gould (rgould\@stat.ucla.edu) or Mine Cetinkaya-Rundel (mc301\@duke.edu).
+
+If you are a student interested in participating in DataFest, check out the upcoming events tab or reach out to the faculty at your institution.

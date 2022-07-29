@@ -1,6 +1,26 @@
 ---
-title: "DataFest"
 sidebar: false
+margin-top: 0px
 ---
 
-Landing Page TBA
+<!-- ::: column-screen -->
+
+<!-- ```{r, echo=FALSE, message=FALSE, warning=FALSE} -->
+
+<!-- library(shinyLP) -->
+
+<!-- iframe(width= "100%" , height = "1000px", "https://allis.shinyapps.io/datafest/") -->
+
+<!-- ``` -->
+
+<!-- ::: -->
+
+Welcome to DataFest!
+
+To learn more about the history of DataFest, take a look at our interactive dashboard.
+
+::: column-screen
+```{=html}
+<iframe width="100%" height="1000px" src="https://allis.shinyapps.io/datafest/" title="Quarto Documentation"></iframe>
+```
+:::

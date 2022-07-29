@@ -12,7 +12,16 @@ website:
     left:
       - href: index.qmd
         text: Home
-      - about.qmd
+      - href: about.qmd
+        text: About
+      - href: upcoming-events.qmd
+        text: Upcoming Events
+      - href: resources.qmd
+        text: Resources
+      - href: getting-started.qmd
+        text: Tutorials
+      - href: contact.qmd
+        text: Contact
 
 format:
   html:

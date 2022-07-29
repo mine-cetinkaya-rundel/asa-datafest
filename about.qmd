@@ -1,9 +1,15 @@
 ---
-title: "About"
+title: "What is DataFest?"
+sidebar: false
+image: about.jpg
+about:
+  template: solana
 ---
 
-About this site
+The American Statistical Association (ASA) DataFest is a celebration of data in which teams of undergraduates work around the clock to find and share meaning in a large, rich, and complex data set.
 
-```{r}
-1 + 1
-```
+DataFest was founded at UCLA in 2011, when 30 students gathered for 48 intense hours to analyze five years of arrest records provided by Lt. Thomas Zak of the Los Angeles Police Department. ASA DataFest is now sponsored by the American Statistical Association and hosted by several of the most prestigious colleges and universities in the country. More than 2000 students take part from schools such as UCLA, Pomona College, Cal Poly San Luis Obispo, UC Riverside, University of Southern California, Purdue University, Duke, the University of North Carolina, North Carolina State, Emory, Princeton, Dartmouth, Smith, Hampshire, Amherst, Mt. Holyoke, and the University of Massachusetts.
+
+A key feature of ASA DataFest is that it brings together the data science community. Undergraduate students do the work, but they are assisted by roving consultants who are graduate students, faculty, and industry professionals. Many professionals find ASA DataFest to be a great recruiting opportunity--they get to watch talented undergraduate students work under pressure in a team and examine their thinking processes.
+
+After two days of intense data wrangling, analysis, and presentation design, each team is allowed a few minutes and no more than two slides to impress a panel of judges. Prizes are given for Best in Show, Best Visualization, and Best Use of External Data.
