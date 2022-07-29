@@ -1,7 +1,5 @@
 ---
 title: "Hypothesis Testing "
-author: "Aarushi Verma"
-date: '2022-07-13'
 output: 
   html_document:
     toc: true
@@ -98,9 +96,9 @@ Because we are interested in differences between funded and non-funded borrowers
 
 Our current master file `lender_loans_with_wbi.csv` only contains the total number of borrowers. However, the `loans.csv` file contains a split of the count of female and male borrowers. Using this information we can create a new variable which indicates whether a borrower is an individual male borrower, individual female borrower or part of a group. We use the `mutate` function to create this new column and name it `bor_type`. We update the values based on `if_else` conditions. We apply these conditions on the male borrower and female borrower count column. The conditions we use are:
 
--   If the value in the m_borrower_count column is equal to 1 and f_borrower_count is equal to 0, we update the value in the `bor_type` column as *Male*
+-   If the value in the `m_borrower_count` column is equal to 1 and `f_borrower_count` is equal to 0, we update the value in the `bor_type` column as *Male*
 
--   If the value in the f_borrower_count column is equal to 1 and m_borrower_count is equal to 0, we update the value in the `bor_type` column as *Female*
+-   If the value in the `f_borrower_count` column is equal to 1 and `m_borrower_count` is equal to 0, we update the value in the `bor_type` column as *Female*
 
 -   For any other case, we update the value in the `bor_type` column as *Group*
 
@@ -139,7 +137,7 @@ Our data contains a `status` column which indicates the current status of the lo
 #Looking at unique values and respective loan count in status column
 status <- kiva_ll_merged %>% group_by(status) %>% summarize(count = length(unique(loan_id))) %>% arrange(desc(count))
 
-status %>% kbl(caption = "Value Counts of Status column", col.names = c("Status", "No. of loans")) %>% 
+status %>% kbl(caption = "Loans Status", col.names = c("Status", "No. of loans")) %>% 
   kable_classic(bootstrap_options ="striped",full_width = F, html_font = "helvetica",position = "left")
 ```
 
@@ -167,14 +165,13 @@ Once we have added our new indicator columns, we will use descriptive statistics
 
 We look at the distribution of the funding status of loans among borrower types. <!-- We will visualize this data in a tabular format since our data contains two categorical variables. -->
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 
 #Creating master df for all plots
-
 bor_chr <- kiva_ll_funding %>% group_by(borrower_image_id,loan_id,income_indicator, location.country,sector,bor_type, funding_status) %>%
   summarize(tot_loans = sum(loan_amount)/100,borr_count = max(borrower_count)) %>% arrange(desc(tot_loans))
 
-bor_chr<- na.omit(bor_chr)
+bor_chr <- na.omit(bor_chr)
 #Bar Chart Funding Status vs Loan Amount by Borrower Type
 ggplot(bor_chr) +
   aes(funding_status, tot_loans, fill =bor_type) + 
@@ -188,37 +185,7 @@ ggplot(bor_chr) +
 
 ```
 
-From the above plot we observe that Female borrowers receive the highest total loans whereas Male borrower's receive the lowest.
-
-```{r piechart, echo = FALSE, include = FALSE, warning = FALSE, message = FALSE, results='asis'}
-
-# # Separate Funded and Not funded loans
-# 
-# loan_funded <- bor_chr %>%  filter(funding_status=="Funded")
-# loan_nonfunded <- bor_chr %>%  filter(funding_status == "Not Funded")
-# 
-# #Compute proportions for funded loans
-# pie_chart_funded <- loan_funded %>% group_by(sector) %>%
-#   summarize(loan_count = length(unique(loan_id)))
-#   
-# pie_chart_funded <- pie_chart_funded %>% 
-#   mutate(prop = (loan_count / sum(pie_chart_funded$loan_count))*100)%>% 
-#   arrange(desc(prop)) 
-# 
-# #Compute proportions for non funded loans
-# pie_chart_nonfunded <- loan_nonfunded %>% group_by(sector) %>%
-#   summarize(loan_count = length(unique(loan_id)))
-#   
-# pie_chart_nonfunded <- pie_chart_nonfunded %>% 
-#   mutate(prop = (loan_count / sum(pie_chart_nonfunded$loan_count))*100)%>% 
-#   arrange(desc(prop)) 
-# 
-# # # Pie Chart from data frame with Appended Sample Sizes
-# # pie(pie_chart_funded$loan_count, labels = pie_chart_funded$prop, main="Pie Chart of Funded Sectors")
-
-```
-
-<!-- This table gives us a snapshot of how the proportions of funded and not funded loans are distributed among sectors. The food sector has the highest proportion of loans that have been funded (26.1%) whereas among not funded loans, the highest proportion is in the Retail sector (24.8%). We can further investigate how this varies with respect to borrower type through a bar chart. -->
+From the above plot we observe that female borrowers account for the majority of funded loan dollars, while group and male borrowers account for the greatest share of unfunded total loan dollars. Next, we explore differences in the funding status of loans by sector.
 
 ```{r, echo = TRUE, message = FALSE, warning=FALSE, results='asis'}
 
@@ -235,7 +202,7 @@ ggplot(funded_sec) +
   aes(sector, prop, fill =sector) + 
   geom_bar(stat="identity", position = "dodge") +
   xlab("Sector") +
-  ylab("Proportion of no. of loans") +
+  ylab("Loan funded rate") +
   scale_fill_viridis(discrete = TRUE,option = "D") +
   ggtitle("Sector wise proportion of funded loans") +
   scale_y_continuous(limits = c(97,100),oob=rescale_none)+
@@ -244,7 +211,7 @@ ggplot(funded_sec) +
 
 ```
 
-#CHANGING LIMIT MAKES THE GRAPH NOT WORK
+ORDER BARS BY FUNDED LOAN RATE, PUT THIS IN AES INSTEAD OF SECTOR: reorder(sector, prop)
 
 Health and arts have a 100% funding rate. This could be due to various reasons. However we can assume that this related to it being either a small number of loans or sectors that favored by lenders
 
@@ -339,25 +306,27 @@ We observe that for funded loans, female borrowers have a significantly higher a
 
 ```
 
-
 We have looked at the borrower characteristics visually through our graphs and descriptive statistics. We now use Hypothesis Testing to further analyze our data.
 
 ### Hypothesis Testing
 
 Hypothesis testing is a statistical inference method used to test an assumption about the data or more specifically the population parameters. To understand our lender motivations we will test several hypotheses.
 
+OUTLINE THE BASIC STEPS OF A HYPOTHESIS TEST AND DEFINE YOUR DECISION RULE AND WHAT A P-VALUE IS HERE.
+
 First, we are interested in understanding how individual loans differ based on the gender of the applicant. The total loan amount is biased by the number of borrowers i.e. the number of female and group borrowers is much larger than the male borrowers, therefore we look at the average loan amount per borrower. To keep the analysis simple we subset our data to only Male and Female borrowers and test our hypothesis using a two-sample t-test. A t-test is a statistical test that compares the means of two samples. By subsetting and calculating the average loan amounts, we are comparing sample means using t-test to check our hypothesis.
 
 Our null and alternative hypothesis are:
 
-$H_{0} :$  $\mu_{female} -  \mu_{male}  = 0$
+FORMATTING MESSED UP HERE, FIX LATEX, NO NEED FOR TEXTT IN YOUR DESCRIPTION
 
-$\texttt{The true difference between the average loan amount for Male borrowers and Female borrowers is equal to 0}$
+$H_{0} :$ $\mu_{female} - \mu_{male} = 0$
 
+The true difference between the average loan amount for Male borrowers and Female borrowers is equal to 0
 
-$H_{1}:$ $ \mu_{female} - \mu_{male} -  > 0$
+$H_{1}:$ \$ \mu*{female} -* \mu{male} \> 0\$
 
-$\texttt{The true difference between the average loan amount for Male borrowers and Female borrowers is less than 0 }$
+The true difference between the average loan amount for Male borrowers and Female borrowers is less than 0
 
 $H_{0}$ *is known as the null hypothesis and* $H_{1}$ *is know as the alternative hypothesis.*
 
@@ -395,7 +364,6 @@ ggplot(pc_gender, aes(x = log(amount_per_cap), color = bor_type, fill = bor_type
 
 ```
 
-
 ```{r summary statistics,echo=FALSE, include = FALSE,results='asis',warning=FALSE,message=FALSE}
 sum_stat <- pc_gender %>%
   group_by(bor_type) %>%
@@ -410,7 +378,6 @@ sum_stat %>% kbl(caption = "Borrower type summary statistics") %>%
   kable_classic(bootstrap_options ="striped",full_width = F, html_font = "helvetica",position = "left")
 
 ```
-
 
 ```{r, include = FALSE}
 # var.test(amount_per_cap ~ bor_type, data = pc_gender)$p.value
@@ -443,6 +410,8 @@ Now we look at the proportion of loans in the funded and non funded sector. Here
 
 Our null and alternative hypothesis are:
 
+WRITE IT OUT SYMBOLICALLY, LOOKS LIKE A TYPO
+
 $H_{0} :$ $\texttt{The proportion of funded loans for females is equal to the proportion of funded loans for males }$
 
 $H_{1}:$ $\texttt{The proportion of funded loans for females is greater than to the proportion of funded loans for males }$
@@ -468,6 +437,8 @@ total_male_loans_funded <- length(unique(total_male_loans_funded$loan_id))
 prop.test(x = c(total_female_loans_funded,total_male_loans_funded) , n = c(total_female_loans,total_male_loans), alternative = "greater", conf.level = 0.95)
 
 ```
+
+TYPICALLY THE LOWEST P-VALUE USED IS 0.001, SO YOU SHOULD SAY P \< 0.001 NOT P\<0.05.
 
 Our test returns a p-value of less than 0.05 level of significance. This implies that it is statistically significant. A statistically significant p-value indicates strong evidence against our null hypothesis. Therefore, we reject the null hypothesis that there is no difference in the proportion of funded loans for female and males. Based on this hypothesis test, we can conclude that lender's may be more motivated to lend to female borrowers in low income countries when compared to male borrowers. This is also reflected in our descriptive statistics.
 
@@ -499,12 +470,13 @@ prop.test(x = c(total_loan_arts_funded,total_loan_transp_funded) , n = c(total_l
 
 Our test returns a p-value of less than 0.05 which is less than the 0.05 significance level. This implies that it is statistically significant. A statistically significant p-value indicates strong evidence against our null hypothesis. Therefore, we reject the null hypothesis that there is no difference in the funding rate between the Arts Sector and the Transportation sector. Based on this hypothesis test, we can conclude that lender's may be more motivated to lend to the Arts sector. They could be motivated by things related to the Arts sector. This could be purely out of interest in the arts sector, or to support new rising arts where resources are scare.
 
+DON'T COPY AND PASTE YOUR TEXT FOR EACH HYPOTHESIS TEST! EXPLAIN THE FORMAT OF A HYPOTHESIS TEST AT THE BEGINNING OF THE SECTION SO YOU DON'T HAVE TO REPEAT THIS. THEN UNDER EACH TEST, SAY SOMETHING LIKE: THE ONE SIDED T-TEST RESULTS IN A P-VALUE LESS THAN 0.001 AND SO WE REJECT THE NULL HYPOTHESIS. THUS, WE FIND STRONG EVIDENCE THAT FEMALE BORROWERS ON AVERAGE RECEIVE HIGHER VALUE LOANS. THIS INDICATES A POTENTIAL PREFERENCE OF LENDERS FOR FEMALE BORROWERS. WE COULD INTERPRET THIS AS EVIDENCE THAT LENDERS ARE MOTIVATE BY A DESIRE TO IMPROVE THE POSITION OF WOMEN IN DEVELOPING COUNTRIES - NOT CONCLUSIVE, BUT SUGGESTS AVENUES FOR FUTURE RESEARCH.
+
 ## Limitations and Conclusion
 
 Our analysis has a few potential limitations. We have made a few assumptions when creating our indicator variables borrower type and funding status. It is possible that these assumptions may have filtered out some data that could have provided us with some more insight. Another limitation is the size of the observations for Not funded loans. There are very few Not Funded loans when compared to Funded Loans and this hinders any comparison we would like to make. We need to assume that our data does not contain the entire population of Not Funded loans.
 
-To conclude, through descriptive statistics we observed that highest proportion of Funded Loans are in the Health, Education and Wholesale sector to name a few. Based on our data, we have seen that the proportion of funded loans is higher than not funded loans, which reflects the high funding rate for all sectors.
-We see that female borrowers received the highest over all loan amounts throughout 2005-2012. (However, we must keep in mind that our data contains more female borrowers).  We also looked at the average amount given to borrowers across sectors and noted that group borrowers tend to received the lowest average loan amount in funded loans. Through our hypothesis test we learned that the average loan amount received by a borrower does not differ based on the borrower's gender. Further we also observed that proportion of funded loans for female borrowers is higher than male borrowes.
+To conclude, through descriptive statistics we observed that highest proportion of Funded Loans are in the Health, Education and Wholesale sector to name a few. Based on our data, we have seen that the proportion of funded loans is higher than not funded loans, which reflects the high funding rate for all sectors. We see that female borrowers received the highest over all loan amounts throughout 2005-2012. (However, we must keep in mind that our data contains more female borrowers). We also looked at the average amount given to borrowers across sectors and noted that group borrowers tend to received the lowest average loan amount in funded loans. Through our hypothesis test we learned that the average loan amount received by a borrower does not differ based on the borrower's gender. Further we also observed that proportion of funded loans for female borrowers is higher than male borrowes.
 
 Overall, we can conclude that Lender's may be heterogeneous in their preferences and motivations when it comes to lending. We have aggregated our data at numerous levels which could have led to the Simpson's paradox. This mainly refers to the appearance of a trend in several groups, however it may disappear when the groups are aggregated.
 
