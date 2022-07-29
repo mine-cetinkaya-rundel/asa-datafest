@@ -33,6 +33,7 @@ library("colorblindr")
 library("viridis")
 library("memisc")
 library("kableExtra")
+library("scales")
 options(readr.show_col_types = FALSE)
 ```
 
@@ -237,7 +238,7 @@ ggplot(funded_sec) +
   ylab("Proportion of no. of loans") +
   scale_fill_viridis(discrete = TRUE,option = "D") +
   ggtitle("Sector wise proportion of funded loans") +
-  scale_y_continuous(limits = c(85,100))+
+  scale_y_continuous(limits = c(97,100),oob=rescale_none)+
   theme(strip.text.x = element_text(size = 16), legend.position = "None") + 
   coord_flip()
 
