@@ -289,7 +289,7 @@ sec_gender_loan <- na.omit(sec_gender_loan)
 # Plot the sector by gender loan amounts
 ggplot(sec_gender_loan) +
   aes(x = reorder(sector, tot_amount), y = tot_amount, fill = bor_type, label = tot_amount) +
-  geom_bar(stat = "identity", position = "stack") +
+  geom_bar(stat = "identity", position = "dodge") +
   theme() +
   guides(fill=guide_legend(title="Borrower Composition"))+
   coord_flip() +
@@ -353,38 +353,34 @@ ggplot(by_sector) +
 
 The graph above shows that for most sectors, paid loans well exceed unpaid loans. Of the top five sectors in terms of loan amount, Agriculture has the highest proportion of unpaid loans, around 30%. Of all sectors, Housing and Education have the highest unpaid loans, nearly 50%. Arts has the lowest proportion of unpaid loans, about 18%. Hence, sector seems likely to be an important variable to include in subsequent analysis of loan repayment.
 
-IT SEEMS WEIRD TO HAVE ONLY ONE PLOT IN THIS SECTION WHEN YOU HAVE MULTIPLE FOR LENDER MOTIVATION. HERE'S THE BASIC CODE FOR A SIDE BY SIDE BAR GRAPH WHICH WILL ALLOW YOU TO COMMENT THE DEFAULT RATE IS GENERALLY VERY LOW, AND NOTE SECTORS WHERE WOMEN HAVE A LOWER DEFAULT RATE THAN MEN (E.G. MANUFACTURING AND HOUSING), HIGHER, SIMILAR...
-
-ALSO NOTE THAT THE DEFAULT RATE IS IDENTICALLY ZERO IN SOME SECTORS FOR SOME GENDERS
-
-YOU CAN EXPERIMENT WITH SORTING THE BARS DIFFERENTLY. CURRENTLY I JUST LOOK AT THE TOP TEN SECTORS BUT YOU CAN CHANGE THAT BY REMOVING THE SUBSETTING IN loans_temp[1:10, ]
-
-```{r}
+```{r Default rate by sector and gender, warning = FALSE, message=FALSE}
 # Summarize default percent by gender and sector: exclude group loans
 loans_df <- loans %>% 
   filter(borrower_m_count < 2, borrower_f_count<2, 
-         (status== "defaulted" | status=="paid")) %>%
+         (status== "Defaulted" | status=="Paid")) %>%
   mutate(borrower_female = ifelse(borrower_f_count ==1, "Female", "Male")) %>%
   group_by(sector, borrower_female) %>%
-  dplyr::summarize(default_rate = sum(status == "defaulted")/ n(), 
-                   n_borrowers = n()) 
+  dplyr::summarize(default_rate = sum(status == "Defaulted")/ n(), 
+                   n_borrowers = n())
+
+#Compute the maximum default rate by sector
 loans_temp <- loans_df %>%
   ungroup(borrower_female) %>%
   dplyr::summarise(max_default_rate = max(default_rate), 
                    total_n_borrowers = sum(n_borrowers)) %>%
   arrange(-total_n_borrowers)
 
-left_join(loans_temp[1:10, ], loans_df,  by = "sector") %>%
+#Combine data frames and plot default rate by sector and gender
+left_join(loans_temp, loans_df,  by = "sector") %>%
 ggplot(aes(x = reorder(sector, max_default_rate), y = default_rate, fill = as.factor(borrower_female))) +
   geom_bar(stat = "identity", position = position_dodge())  + 
   coord_flip() + 
   scale_fill_viridis(discrete = TRUE) + 
   labs(title = "Default rate by sector and gender", y = "Loan default rate", 
        x = "", fill = "Borrower sex")
-
-
-
 ```
+
+From the graph above, we can see that in Personal Use, Manufaturing, Housing, and Transportation sectors, males have a higher default rate than females, while in Health, the data appears to be the opposite. It's worth noting that in Entertainment and Education, especially in Education where females received a higher loan amount than males, only none of the female borrowers defaulted, while in Wholesale sector only female borrowers defaulted their loans. In other sectors, the default rates for both males and females are similar.
 
 ### Conclusion
 
