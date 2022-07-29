@@ -8,8 +8,8 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
-options(digits = 3)
+# knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+# options(digits = 3)
 ```
 
 I ASKED YOU TO ADD AN INTRODUCTION HERE OUTLINING THE STRUCTURE OF THIS TUTORIAL: EXPLAIN THE MOTIVATION, INTRODUCE THE DIFFERENCE BETWEEN BAYESIAN AND FREQUENTIST REGRESSION, AND SAY WHAT STEPS WILL BE IN HERE.
@@ -17,7 +17,7 @@ I ASKED YOU TO ADD AN INTRODUCTION HERE OUTLINING THE STRUCTURE OF THIS TUTORIAL
 In this section, we analyze the factors associated with loan repayment, so we are performing our analyses on the `loans.csv` data set.
 
 ```{r}
-loans <- read.csv("data/loans.csv")
+# loans <- read.csv("data/loans.csv")
 ```
 
 ## Required Packages
@@ -25,116 +25,116 @@ loans <- read.csv("data/loans.csv")
 Next, we loaded all the packages needed to perform our analysis using the `library()` function:
 
 ```{r}
-library(tidyverse)
-library(loo)
-library(jtools)
-library(countrycode)
-library(knitr)
-library(pROC)
-library(rstanarm)
-library(bayesplot)
+# library(tidyverse)
+# library(loo)
+# library(jtools)
+# library(countrycode)
+# library(knitr)
+# library(pROC)
+# library(rstanarm)
+# library(bayesplot)
 ```
 
 There are eight core $\texttt{Tidyverse}$ packages namely $\texttt{ggplot2}$, $\texttt{dplyr}$, $\texttt{tidyr}$, $\texttt{readr}$, $\texttt{purrr}$, $\texttt{tibble}$, $\texttt{stringr}$, and $\texttt{forcats}$. In our analysis we are using $\texttt{dplyr}$ for data manipulations and $\texttt{ggplot2}$ for graphics. The $\texttt{loo}$ package allows us to compute efficient approximate leave-one-out cross-validation for fitted Bayesian models. ${\texttt{jtools}$ provides a collection of tools for more efficiently presenting the results of regression analyses. ${\texttt{pROC}$ is for displaying and analyzing ROC curves. ${\texttt{rstanarm}$ is an appendage to the ${\texttt{rstan}$ package, the R interface to Stan which features an expressive probabilistic programming language for specifying Bayesian models backed by extensive math and algorithm libraries to support automated computation. The ${\texttt{bayesplot}$ package offers a variety of plots of posterior draws, visual MCMC diagnostics, and graphical posterior predictive checkings.
 
 ```{r eval=FALSE, echo=FALSE}
-percent <- training %>% 
-  drop_na(sector) %>% # drop missing values by health variable
-  group_by(sector) %>%  # specify categorical variable
-  summarize(Frequency = n()) %>% # return counts / frequencies
-  mutate(Percent = paste0(round(Frequency / nrow(training) * 100, 2), "%"))
-
-table <- kbl(percent, 
-    caption = "Table 2: Frequency table for loan sectors") %>%
-    kable_styling(bootstrap_options = "striped", full_width = FALSE, position = "left")
-table
-colourCount = length(unique(loans$sector))
-getPalette = colorRampPalette(brewer.pal(12, "Set3"))
-bar <- ggplot(data = percent, aes(x = reorder(sector, Frequency), y = Frequency)) +
-  geom_col(aes(fill = getPalette(colourCount)) , show.legend = FALSE) +
-  ggtitle(paste("Loan Sector Distribution")) +
-  coord_flip() 
-bar
-```
-
-```{r eval=FALSE, echo=FALSE}
-status <- loans %>% 
-  drop_na(status) %>% # drop missing values by health variable
-  group_by(status) %>%  # specify categorical variable
-  summarize(Frequency = n()) %>% # return counts / frequencies
-  mutate(Percent = paste0(round(Frequency / nrow(loans) * 100, 2), "%"))
-
-table1 <- tibble(status) %>% 
-  arrange(desc(Percent))
-table1
-donut1 <- ggplot(status, aes(x = 2, y = Frequency, fill = status)) +
-    geom_bar(stat = "identity") +
-    coord_polar(theta = "y", start = 0) + 
-    theme_void() + # these theme removes the lines around chart and grey background
-    theme(legend.title = element_text(size = 12),
-          legend.text = element_text(size = 12)) +
-    scale_fill_brewer(palette="Accent") +
-    labs(fill = "Status Distribution") +
-    xlim(0.5, 2.5)
-donut1
-bar1 <- ggplot(loans, aes(x = status)) +
-  geom_bar() +
-  coord_flip()
-bar1
+# percent <- training %>% 
+#   drop_na(sector) %>% # drop missing values by health variable
+#   group_by(sector) %>%  # specify categorical variable
+#   summarize(Frequency = n()) %>% # return counts / frequencies
+#   mutate(Percent = paste0(round(Frequency / nrow(training) * 100, 2), "%"))
+# 
+# table <- kbl(percent, 
+#     caption = "Table 2: Frequency table for loan sectors") %>%
+#     kable_styling(bootstrap_options = "striped", full_width = FALSE, position = "left")
+# table
+# colourCount = length(unique(loans$sector))
+# getPalette = colorRampPalette(brewer.pal(12, "Set3"))
+# bar <- ggplot(data = percent, aes(x = reorder(sector, Frequency), y = Frequency)) +
+#   geom_col(aes(fill = getPalette(colourCount)) , show.legend = FALSE) +
+#   ggtitle(paste("Loan Sector Distribution")) +
+#   coord_flip() 
+# bar
+# ```
+# 
+# ```{r eval=FALSE, echo=FALSE}
+# status <- loans %>% 
+#   drop_na(status) %>% # drop missing values by health variable
+#   group_by(status) %>%  # specify categorical variable
+#   summarize(Frequency = n()) %>% # return counts / frequencies
+#   mutate(Percent = paste0(round(Frequency / nrow(loans) * 100, 2), "%"))
+# 
+# table1 <- tibble(status) %>% 
+#   arrange(desc(Percent))
+# table1
+# donut1 <- ggplot(status, aes(x = 2, y = Frequency, fill = status)) +
+#     geom_bar(stat = "identity") +
+#     coord_polar(theta = "y", start = 0) + 
+#     theme_void() + # these theme removes the lines around chart and grey background
+#     theme(legend.title = element_text(size = 12),
+#           legend.text = element_text(size = 12)) +
+#     scale_fill_brewer(palette="Accent") +
+#     labs(fill = "Status Distribution") +
+#     xlim(0.5, 2.5)
+# donut1
+# bar1 <- ggplot(loans, aes(x = status)) +
+#   geom_bar() +
+#   coord_flip()
+# bar1
 ```
 
 We then created a new variable `continent` based on the country to reduce the number of levels of the geographical variable.
 
 ```{r}
-loan <- loans %>% 
-  mutate(continent = countrycode(sourcevar = location.country,
-                            origin = "country.name",
-                            destination = "continent"))
+# loan <- loans %>% 
+#   mutate(continent = countrycode(sourcevar = location.country,
+#                             origin = "country.name",
+#                             destination = "continent"))
 ```
 
 ```{r eval=FALSE, echo=FALSE}
-ggplot(data = loan, aes(x = funded_amount)) +
-  geom_histogram(binwidth=100) +
-  labs(title="Distribution of Funded Amount")
-
-ggplot(data = loan, aes(x = paid_amount)) +
-  geom_histogram(binwidth=100) +
-  labs(title="Distribution of Paid Amount")
-
-ggplot(loan, aes(x = posted_yr)) +
-  geom_histogram()
+# ggplot(data = loan, aes(x = funded_amount)) +
+#   geom_histogram(binwidth=100) +
+#   labs(title="Distribution of Funded Amount")
+# 
+# ggplot(data = loan, aes(x = paid_amount)) +
+#   geom_histogram(binwidth=100) +
+#   labs(title="Distribution of Paid Amount")
+# 
+# ggplot(loan, aes(x = posted_yr)) +
+#   geom_histogram()
 ```
 
 ```{r eval=FALSE, echo=FALSE}
-loan %>%
-  count(status, sector) %>%       
-  group_by(status) %>%
-  mutate(pct= prop.table(n) * 100) %>%
-  ggplot() + aes(status, pct, fill=sector) +
-  geom_bar(stat="identity") +
-  labs(x = "Status", y = "Proportion") +
-  coord_flip() 
+# loan %>%
+#   count(status, sector) %>%       
+#   group_by(status) %>%
+#   mutate(pct= prop.table(n) * 100) %>%
+#   ggplot() + aes(status, pct, fill=sector) +
+#   geom_bar(stat="identity") +
+#   labs(x = "Status", y = "Proportion") +
+#   coord_flip() 
 ```
 
 ```{r eval=FALSE, echo=FALSE}
-#continent
-ggplot(data=d, aes(x = fct_infreq(continent),  fill=continent)) +
-  geom_bar(stat = 'count') +
-  scale_fill_brewer(palette = "Accent") +
-  labs(x = "Continent")
-
-ggplot(data=d, aes(x = status)) +
-  geom_bar(aes(fill=as.factor(continent)), position="fill") +
-  scale_fill_brewer(palette = "Accent")
-
-#sector
-ggplot(data=d, aes(x = status)) +
-  geom_bar(aes(fill=as.factor(sector)), position="fill") 
-
-#loan_amount
-ggplot(d, aes(x = loan_amount, group = status)) +
-  geom_boxplot()
-  #geom_boxplot(outlier.colour="red", outlier.shape=8, outlier.size=4)
+# #continent
+# ggplot(data=d, aes(x = fct_infreq(continent),  fill=continent)) +
+#   geom_bar(stat = 'count') +
+#   scale_fill_brewer(palette = "Accent") +
+#   labs(x = "Continent")
+# 
+# ggplot(data=d, aes(x = status)) +
+#   geom_bar(aes(fill=as.factor(continent)), position="fill") +
+#   scale_fill_brewer(palette = "Accent")
+# 
+# #sector
+# ggplot(data=d, aes(x = status)) +
+#   geom_bar(aes(fill=as.factor(sector)), position="fill") 
+# 
+# #loan_amount
+# ggplot(d, aes(x = loan_amount, group = status)) +
+#   geom_boxplot()
+#   #geom_boxplot(outlier.colour="red", outlier.shape=8, outlier.size=4)
 ```
 
 # Logistic Regression
@@ -144,10 +144,10 @@ The response of interest is loan payment status, recorded in the `status` column
 To achieve this, we restrict the dataset to completed loans, which are either repaid or not repaid. With a binary response variable, we can utilize a binary logistic regression. (We are not using a linear regression because it can generates predictions larger than 1 or smaller than 0 which are not sensible for classification since the true probability must fall between 0 and 1; also, linear regression assumes normal errors, which is not the case for a Bernoulli variable). We set the `status` variable to be 1 if the loan status is and 0 if it is "defaulted", such that we know the negative class is "defaulted" and the positive class is "paid".
 
 ```{r}
-d <- loan %>% 
-  filter(status == "paid"|status == "defaulted")
-d <- d %>% 
-  mutate(status = if_else(status == "paid", 1, 0))
+# d <- loan %>% 
+#   filter(status == "paid"|status == "defaulted")
+# d <- d %>% 
+#   mutate(status = if_else(status == "paid", 1, 0))
 ```
 
 The logistic regression model is an example of a broad class of models known as generalized linear models (GLM). GLM's extend ordinary least squares regression to response variables from arbitrary distributions through the use of a link function; instead of the response varying linearly with the covariates, its link function does. In this case, our response is a binary variable and so the Bernoulli model is appropriate. The Bernoulli distribution is a discrete probability distribution of a random variable which takes the value 1 with probability $p$ and the value 0 with probability $q=1-p$.The likelihood for one observation $y$ can be written as a Bernoulli PMF over possible outcomes $k$: $$\begin{equation}
@@ -181,25 +181,25 @@ The response variable we were using is `status,` since we wanted to explore whic
 -   `sex`, which indicates the sex of a borrower group, where "mixed" means there are both males and females in a borrower group.
 
 ```{r}
-d <- d %>% 
-  select(loan_id, loan_amount, status, funded_amount, posted_yr, posted_mo, posted_day, funded_yr, funded_mo, funded_day, sector, continent, borrower_m_count, borrower_f_count) %>% 
-  mutate(dif = loan_amount-funded_amount,
-         time = (funded_yr - posted_yr)*365+(funded_mo - posted_mo)*30 + (funded_day - posted_day),
-         sex = case_when(borrower_m_count == 0 ~ "female",
-                         borrower_f_count == 0 ~ "male",
-                         TRUE ~ "mixed"))
+# d <- d %>% 
+#   select(loan_id, loan_amount, status, funded_amount, posted_yr, posted_mo, posted_day, funded_yr, funded_mo, funded_day, sector, continent, borrower_m_count, borrower_f_count) %>% 
+#   mutate(dif = loan_amount-funded_amount,
+#          time = (funded_yr - posted_yr)*365+(funded_mo - posted_mo)*30 + (funded_day - posted_day),
+#          sex = case_when(borrower_m_count == 0 ~ "female",
+#                          borrower_f_count == 0 ~ "male",
+#                          TRUE ~ "mixed"))
 ```
 
 ```{r}
-# in original data
-loans <- loans %>% 
-  mutate(dif = loan_amount-funded_amount)
-loans %>% 
-  filter(dif!=0) %>% 
-  summarise(min = min(dif), 
-            max = max(dif))
-# in current data
-unique(d$dif)
+# # in original data
+# loans <- loans %>% 
+#   mutate(dif = loan_amount-funded_amount)
+# loans %>% 
+#   filter(dif!=0) %>% 
+#   summarise(min = min(dif), 
+#             max = max(dif))
+# # in current data
+# unique(d$dif)
 ```
 
 However, although in the original data set the difference between loan amount and funded amount can range from 50 to 7650 other than 0, after we filtered the original data set to contain only completed loans, all the observations have funded amount equal to the loan amount. Thus, the variable `dif` would not make any difference on the response variable, so we were excluding it from our model.
@@ -209,12 +209,12 @@ However, although in the original data set the difference between loan amount an
 Next, we split our data into training set and test set, in order to estimate the performance of our model on unseen data: data not used to train. This is to see whether our model is generalized or overfitting. Overfitting occurs when the model fits exactly against the training data - it's memorizing the seen pattern rather than generalizing to new data.
 
 ```{r}
-seed <- 2
-train1 <- sample(d$loan_id, 30000)
-training <- d %>% 
-  filter(loan_id %in% train1)
-testing <-d %>% 
-  filter(!loan_id %in% train1)
+# seed <- 2
+# train1 <- sample(d$loan_id, 30000)
+# training <- d %>% 
+#   filter(loan_id %in% train1)
+# testing <-d %>% 
+#   filter(!loan_id %in% train1)
 ```
 
 ### Model Fitting
@@ -222,7 +222,7 @@ testing <-d %>%
 Now we're ready to fit our logistic model on the training set using the `glm()` function:
 
 ```{r}
-model <- glm(status ~ loan_amount + sector + posted_yr + continent + time + sex, data = training, family = "binomial"(link = "logit")) 
+# model <- glm(status ~ loan_amount + sector + posted_yr + continent + time + sex, data = training, family = "binomial"(link = "logit")) 
 ```
 
 Here we specify the family to be binomial and the link function to be logit so that the function implements a logistic regression, described above.
@@ -232,13 +232,13 @@ Here we specify the family to be binomial and the link function to be logit so t
 To identify variables that are important in explaining variation in the response, we perform model selection using the `step()` function. Specifying "direction="both"" tells R to perform both forward and backward selections. Forward selection here starts with an intercept-only model and adds variables to it, until some stopping criterion is met. Contrarily, backward selection starts with a full model with all the variables included and then excludes variables from that set until some stopping criterion is met. The default selection criterion is $\mathrm{AIC}$: from the current model, it drops or adds the one variable that leads to the best $\mathrm{AIC}$ improvement (smallest $\mathrm{AIC}$).
 
 ```{r}
-step(model, direction="both",trace=FALSE)
+# step(model, direction="both",trace=FALSE)
 ```
 
 The variables selected here are all except `time`. We dropped the `time` variable from our model. The final model is then:
 
 ```{r}
-final <- glm(status ~ loan_amount + sector + posted_yr + continent + sex, data = training, family = "binomial"(link = "logit")) 
+# final <- glm(status ~ loan_amount + sector + posted_yr + continent + sex, data = training, family = "binomial"(link = "logit")) 
 ```
 
 ### Model Output
@@ -246,28 +246,28 @@ final <- glm(status ~ loan_amount + sector + posted_yr + continent + sex, data =
 We now look at a summary of the model output using the `summ()` function from the $\texttt{jtools}$ package:
 
 ```{r}
-summ(final)
+# summ(final)
 ```
 
 A brief look at the output would tell us that terms `sectorEducation` and `continentOceania` have coefficients considerably larger than others but in the meantime have p-values considerably larger than others. A p-value measures the probability of obtaining the observed results, assuming that the null hypothesis is true. The lower the p-value, the greater the statistical significance of the observed difference. Thus, with p-values close to 1, these two terms are not considered statistically significant. An intuitive reason of these high p-values would be that in our training set (as well as in the original data set), Education sector is one of the top 3 sectors with the least number of observations, accounting for only 0.43% of the data. Similarly, Oceania is the continent with the least observations in our training set (as well as in the original data set), accounting for only 1.25% of the data. See the percentages in the tables below:
 
 ```{r}
-t1<-training %>% 
-  drop_na(sector) %>% 
-  group_by(sector) %>% 
-  summarise(percent = round(n() / nrow(training) * 100, 2)) %>% 
-  arrange(desc(percent)) %>% 
-  mutate(percent = paste0(percent, "%"))
-
-t2<-training %>% 
-  drop_na(continent) %>% 
-  group_by(continent) %>% 
-  summarise(percent = round(n() / nrow(training) * 100, 2)) %>% 
-  arrange(desc(percent)) %>% 
-  mutate(percent = paste0(percent, "%"))
-
-kable(t1)
-kable(t2)
+# t1<-training %>% 
+#   drop_na(sector) %>% 
+#   group_by(sector) %>% 
+#   summarise(percent = round(n() / nrow(training) * 100, 2)) %>% 
+#   arrange(desc(percent)) %>% 
+#   mutate(percent = paste0(percent, "%"))
+# 
+# t2<-training %>% 
+#   drop_na(continent) %>% 
+#   group_by(continent) %>% 
+#   summarise(percent = round(n() / nrow(training) * 100, 2)) %>% 
+#   arrange(desc(percent)) %>% 
+#   mutate(percent = paste0(percent, "%"))
+# 
+# kable(t1)
+# kable(t2)
 ```
 
 Interpreting the coefficients in a logistic regression is a little less straight-forward than in linear regression, but still quite simple. For example, the coefficient for `posted_yr` is "0.42", which means that for a given year when the loan is posted, the expected odds of the loan getting repaid is $e^{0.42}\approx1.52$ times the odds of the loan getting repaid if the loan is posted in the previous year.
@@ -277,10 +277,10 @@ Interpreting the coefficients in a logistic regression is a little less straight
 To evaluate our model, we plotted the ROC (*Receiver Operating Characteristic*) curve. In a nutshell, ROC curve visualizes the performance of a logistic model at all classification thresholds. It plots *False positive rate* on the X-axis, which informs us about the proportion of the negative class classified as positive ($False positive rate=\frac{False positives}{False positives + True negatives (= All negatives)}$) and *True positive rate* on the y-axis, which informs us about the proportion of the positive class correctly classified ($True positive rate=\frac{True positives}{True positives + False negatives (= All positives)}$). We used `ggroc()` from the $\texttt{pROC}$ package to plot the ROC curve.
 
 ```{r}
-predicted1 <- predict(final, newdata = testing)
-roc1 = roc(response = testing$status, predictor = predicted1)
-ggroc(roc1, legacy.axes = TRUE) +
-  labs(x = 'False-positive rate', y = 'True-positive rate', title = 'Simulated ROC curve')
+# predicted1 <- predict(final, newdata = testing)
+# roc1 = roc(response = testing$status, predictor = predicted1)
+# ggroc(roc1, legacy.axes = TRUE) +
+#   labs(x = 'False-positive rate', y = 'True-positive rate', title = 'Simulated ROC curve')
 ```
 
 WHAT DO YOU MEAN BY MONOTONICALLY INCREASING IN BOTH DIRECTIONS? WHAT DIRECTIONS?
@@ -288,13 +288,13 @@ WHAT DO YOU MEAN BY MONOTONICALLY INCREASING IN BOTH DIRECTIONS? WHAT DIRECTIONS
 As we can see from the graph, the curve is monotonically increasing in both directions. This is because both False positive rate and True positive rate are increased with lower the classification threshold which classifies more items as positive. The closer the ROC curve is to the top left corner of the plot, the better the model does at classifying the data into correct categories. To quantify this, we can calculate the AUC (area under the curve) which tells us how much of the plot is located under the curve. AUC ranges in value from 0 to 1. A model whose predictions are 100% wrong has an AUC of 0; one whose predictions are 100% correct has an AUC of 1. The AUC score would be 1 in that scenario. We used the `auc()` function from the $\texttt{pROC}$ package to calculate the AUC of the model.
 
 ```{r}
-auc(testing$status,predicted1)
-summ(model)
+# auc(testing$status,predicted1)
+# summ(model)
 ```
 
 Here we got an AUC score of 0.7158, which means there is about 70% chance that our model will be able to distinguish between positive class (paid) and negative class (defaulted). In general, an AUC of 0.5 suggests no discrimination, 0.7 to 0.8 is considered acceptable, 0.8 to 0.9 is considered excellent, and more than 0.9 is considered outstanding.
 
-### Conclusion - MOVE THIS DUSCUSSION TO YOUR MODEL OUTPUT SECTION AND CALL IT "RESULTS". CHANGE THIS SECTION TO BE CALLED "DISCUSSION" AND MAKE IT SHORTER, SUMMARIZE THE IMPORTANT FINDINGS. 
+### Conclusion - MOVE THIS DUSCUSSION TO YOUR MODEL OUTPUT SECTION AND CALL IT "RESULTS". CHANGE THIS SECTION TO BE CALLED "DISCUSSION" AND MAKE IT SHORTER, SUMMARIZE THE IMPORTANT FINDINGS.
 
 DON'T SUBTRACT ONE FROM ODDS, INSTEAD SAY ODDS INCREASE BY 1.54 EACH YEAR ETC, CHANGE ALL DIFFERENCES CORRESPONDINGLY. YOU DON'T HAVE TO DO THE ODDS TRANSFORMATION FOR EVERYTHING, JUST DO IT FOR ONE OR TWO. SHORTEN THE DISCUSSION AND FOCUS ON THE VARIABLES THAT ARE IMPORTANT AND SIGNIFICANT.
 
@@ -309,13 +309,13 @@ Next, we implement an alternative to the model above using a Bayesian approach. 
 To reduce time-complexity that `stan_glm()` needs to fit a model, we sampled 5000 from the 68707 observations. We set a seed so that we get the same results for randomization.
 
 ```{r}
-seed <- 1
-d1 <- sample_n(d, 5000)
+# seed <- 1
+# d1 <- sample_n(d, 5000)
 ```
 
 ```{r include=FALSE}
-load("data/post1.Rdata")
-load("data/post0.Rdata")
+# load("data/post1.Rdata")
+# load("data/post0.Rdata")
 ```
 
 ### Model Fitting
@@ -331,24 +331,24 @@ In the following code, we specified the chosen link, and used the default priors
 SAY WHAT THE DEFAULT PRIORS ARE. YOU PRINT THEM BUT DON'T INTEPRET
 
 ```{r eval=FALSE}
-post1 <- stan_glm(status ~ loan_amount + sector + posted_yr + continent + sex, data = d1,
-                 family = binomial(link = "logit"), 
-                 #prior = normal(0,1), prior_intercept = normal(0,1),
-                 seed = seed,
-                 refresh = 0,
-                 cores=3, chains = 3,warmup = 500,iter = 1200)
+# post1 <- stan_glm(status ~ loan_amount + sector + posted_yr + continent + sex, data = d1,
+#                  family = binomial(link = "logit"), 
+#                  #prior = normal(0,1), prior_intercept = normal(0,1),
+#                  seed = seed,
+#                  refresh = 0,
+#                  cores=3, chains = 3,warmup = 500,iter = 1200)
 ```
 
 The `prior_summary()` function would allow us to see the info on priors used in this model:
 
 ```{r}
-prior_summary(post1)
+# prior_summary(post1)
 ```
 
 We can view the output of the model here:
 
 ```{r}
-post1
+# post1
 ```
 
 It includes the point estimates (median) as well as the uncertainty estimates (median absolute deviation) for coefficients of all predictors. We can notice that the median estimate for `loan_amount` is 0.0 with a median absolute deviation of 0.0, indicating no relationship between loan amount and the loan status. Among the sectors, Education, Entertainment, Health, Personal Use, and Wholesale each has a considerably large median estimate, but that comes with an almost equally large median absolute deviation. Unsurprisingly, these five sectors have the top 5 least numbers of observations. Same for the `continent` variable, the two continents with the top 2 least numbers of observations have considerably large median estimates as well as uncertainty intervals.
@@ -356,8 +356,8 @@ It includes the point estimates (median) as well as the uncertainty estimates (m
 DON'T SPEND SO MUCH TIME DISCUSSING NON-RESULTS. INSTEAD OF PRINTING THE MODEL OUTPUT AND DISCUSSING THE MAD_SD JUST SHOW THE CATERPILLER PLOT.
 
 ```{r}
-kable(t1)
-kable(t2)
+# kable(t1)
+# kable(t2)
 ```
 
 ### Model Parameter Visualization
@@ -368,36 +368,36 @@ First, we sort the predictor variables in our model `post1` by their posterior m
 
 ```{r}
 # extract the coefficients and sort them in ascending order
-coef <- data.frame(post1$coefficients) %>% 
-  arrange(post1.coefficients)
-
-# store the variables corresponding to the coefficients as a list
-order <- rownames(coef)[-1]
-
-# plot the sorted coefficients with uncertainty interval
-cate <- mcmc_intervals(as.matrix(post1), pars = order, prob = 0.95, prob_outer = 1)
-cate
+# coef <- data.frame(post1$coefficients) %>% 
+#   arrange(post1.coefficients)
+# 
+# # store the variables corresponding to the coefficients as a list
+# order <- rownames(coef)[-1]
+# 
+# # plot the sorted coefficients with uncertainty interval
+# cate <- mcmc_intervals(as.matrix(post1), pars = order, prob = 0.95, prob_outer = 1)
+# cate
 ```
 
 ### Model Evaluation
 
 ```{r}
-(loo1 <- loo(post1, save_psis = TRUE))
+# (loo1 <- loo(post1, save_psis = TRUE))
 ```
 
 In the code chunk above, we assessed the strength of our model via its posterior predictive LOOCV (Leave One Out Cross-Validation). Cross-validation is a technique for evaluating models by training the models on subsets of the available input data and evaluating them on the complementary subset of the data. LOOCV is a type of cross-validation approach in which each observation is considered as the validation set and the rest ($N-1$) observations are considered as the training set. PSIS-LOO CV is and efficient approximate LOOCV for Bayesian models using Pareto smoothed importance sampling ([**PSIS**](https://www.rdocumentation.org/link/PSIS?package=loo&version=2.5.1&to=%3Dpsis)). We can see from the output that PSIS-LOO result is reliable as all Pareto k estimates are small (k\< 0.5). However as we know, this accuracy rate is quite meaningless unless we have something to compare it to. So we created a baseline model with no predictors for comparison:
 
 ```{r eval=FALSE}
-post0 <- stan_glm(status ~ 1, data = d1,
-                 family = binomial(link = "logit"), 
-                 seed = seed,
-                 refresh = 0,
-                 cores=3, chains = 3, warmup = 500,iter = 1200)
+# post0 <- stan_glm(status ~ 1, data = d1,
+#                  family = binomial(link = "logit"), 
+#                  seed = seed,
+#                  refresh = 0,
+#                  cores=3, chains = 3, warmup = 500,iter = 1200)
 ```
 
 ```{r}
-(loo0 <- loo(post0, save_psis = T))
-rstanarm::compare_models(loo0, loo1)
+# (loo0 <- loo(post0, save_psis = T))
+# rstanarm::compare_models(loo0, loo1)
 ```
 
 Since difference is positive, the expected predictive accuracy for the second model (post1) is higher.
@@ -405,29 +405,29 @@ Since difference is positive, the expected predictive accuracy for the second mo
 Below, we compute posterior predictive probabilities of the linear predictor via the `posterior_linpred()` function provided in the $\texttt{rstanarm}$ package. This function will extract posterior draws from the linear predictor. If we used a link function, then specifying the transform argument as `TRUE` will return the predictor as transformed via the inverse-link.
 
 ```{r}
-preds <- posterior_linpred(post1, transform=TRUE)
-pred <- colMeans(preds)
+# preds <- posterior_linpred(post1, transform=TRUE)
+# pred <- colMeans(preds)
 ```
 
 We calculate these posterior predictive probabilities in order to determine the classification accuracy of our model. If the posterior probability of paying back the loan for an borrower is greater or equal to 0.5, then we would predict that observation to be a repaid loan (and similarly for less than 0.5). For each observation, we can compare the posterior prediction to the actual observed value. The proportion of times we correctly predict an individual (i.e. $$prediction = 0 and observation = 0$$ or $$prediction = 1 and observation = 1$$) is our classification accuracy.
 
 ```{r}
-pr <- as.integer(pred >= 0.5)
-round(mean(xor(pr,as.integer(d1$status==0))),3) #classification accuracy
+# pr <- as.integer(pred >= 0.5)
+# round(mean(xor(pr,as.integer(d1$status==0))),3) #classification accuracy
 ```
 
 We should also evaluate the classification accuracy of our model on unseen data. This can be done by using a test dataset or via a LOOCV approach. Since we've talked about the former approach in the frequentist section ([**here**](link%20to%20be%20added%20after%20embedded%20in%20the%20website)), in this section we would use the latter to illustrate the function `E_loo()`, which uses importance weights generated from the `loo()` function.
 
 ```{r}
-ploo = E_loo(preds, loo1$psis_object, type = "mean", log_ratios = -log_lik(post1))$value
-round(mean(xor(ploo > 0.5, as.integer(d1$status == 0))),3)
+# ploo = E_loo(preds, loo1$psis_object, type = "mean", log_ratios = -log_lik(post1))$value
+# round(mean(xor(ploo > 0.5, as.integer(d1$status == 0))),3)
 ```
 
 The accuracy is 0.976, which is very high. However, this does not necessarily mean our model is doing great in prediction. Instead, it is probably just due to the high unbalance of the data, with almost all observations having the value "paid" for the response variable.
 
 ```{r}
-qplot(pred, ploo,geom=c("point", "smooth")) +
-  ggtitle("LOO probability vs. posterior predictive probability")
+# qplot(pred, ploo,geom=c("point", "smooth")) +
+#   ggtitle("LOO probability vs. posterior predictive probability")
 ```
 
 In the plot above we can see the small difference in posterior predictive probabilities and LOO probabilities.
@@ -435,21 +435,21 @@ In the plot above we can see the small difference in posterior predictive probab
 We can again use ROC and AUC to evaluate this model. First, we need to prepare a test data set. Here we are extracting data from the original data set that are not in the sample.
 
 ```{r}
-train <- d1
-test <- setdiff(d, train)
-predicted <- predict(post1, newdata=test)
+# train <- d1
+# test <- setdiff(d, train)
+# predicted <- predict(post1, newdata=test)
 ```
 
 Here's the ROC curve of our model on test data:
 
 ```{r}
-roc = roc(response = test$status, predictor = predicted)
-ggroc(roc, legacy.axes = TRUE) +
-  labs(x = 'False-positive rate', y = 'True-positive rate', title = 'Simulated ROC curve')
+# roc = roc(response = test$status, predictor = predicted)
+# ggroc(roc, legacy.axes = TRUE) +
+#   labs(x = 'False-positive rate', y = 'True-positive rate', title = 'Simulated ROC curve')
 ```
 
 ```{r}
-auc(test$status,predicted)
+# auc(test$status,predicted)
 ```
 
 Here we got an AUC score of 0.7052, which means there is about 70% chance that our model will be able to distinguish between positive class (paid) and negative class (defaulted).
@@ -467,6 +467,6 @@ YOUR CONCLUSION COMPARING THE MODELS SHOULD NOT HAVE SO MANY NUMBERS BUT INSTEAD
 Also, we can save our models in a folder so that RStudio doesn't need to go through the model fitting process every time we knit the document. Just load the models from where they are stored.
 
 ```{r eval=FALSE, echo=FALSE}
-save(post1, file = "data/post1.RData")
-save(post0, file = "data/post0.RData")
+# save(post1, file = "data/post1.RData")
+# save(post0, file = "data/post0.RData")
 ```
