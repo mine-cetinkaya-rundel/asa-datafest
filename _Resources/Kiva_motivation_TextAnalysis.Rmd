@@ -241,11 +241,11 @@ status_table <- kiva_ll %>%
   summarize(count = length(unique(loan_id))) %>% 
   arrange(desc(count))
 
+status_table["status"][status_table["status"] == "in_repayment"] <- "in repayment"
+
 status_table %>% kbl(caption = "Value counts of status column",col.names=c("Status", "No. of loans") ) %>% 
   kable_classic(bootstrap_options ="striped",full_width = F, html_font = "helvetica",position = "center")
 ```
-
-FIX ENTRIES TO BE WORDS NOT VARNAMES - THOUGHT I PUT THIS IN THE LAST EDIT
 
 The status column contains 7 unique values. We look at the data dictionary and Kiva website to get a better idea of what each term means. Based on that we make the classification of these terms to our 2 classes funded and not-funded:
 
