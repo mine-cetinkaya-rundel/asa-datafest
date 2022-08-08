@@ -211,7 +211,7 @@ ggplot(funded_sec) +
 
 ```
 
-Wholesale, Health, Entertainment, Education and Arts sectors have a 100% funding rate. Our first interpretation could be that this indicates that lenders have a high preference for loans in these sectors. However we must note that this could be due to various reasons such as there being only a small number of loans in the sector which increase their probability of getting funded. 
+Wholesale, Health, Entertainment, Education and Arts sectors have a 100% funding rate. Our first interpretation could be that this indicates that lenders have a high preference for loans in these sectors. However we must note that this could be due to various reasons such as there being only a small number of loans in the sector which increase their probability of getting funded.
 
 We have looked at how the proportion of loans varies across sectors, next we look at how the average loan amount varies across sectors, for our indicators. Since the number of borrowers is not evenly distributed across types in our data, looking at the average loan amount helps to make the comparisons more material.
 
@@ -310,26 +310,25 @@ We have looked at the borrower characteristics visually through our graphs and d
 
 Hypothesis testing is a statistical inference method used to test an assumption about the data or more specifically the population parameters. To understand our lender motivations we will test several hypotheses.
 
-Here is an outline of the basic steps that are performed during a hypothesis test:  
+Here is an outline of the basic steps that are performed during a hypothesis test:
 
-* Specify the null hypothesis
-* Specify the alternative hypothesis
-* Set the significance level (also known as $\alpha$ )
-* Calculate the test statistics and the corresponding p-value
-* Draw the conclusion
+-   Specify the null hypothesis
+-   Specify the alternative hypothesis
+-   Set the significance level (also known as $\alpha$ )
+-   Calculate the test statistics and the corresponding p-value
+-   Draw the conclusion
 
-As you recall form your Introduction to Statistics class, the p-value (probability value) is the level of significance within a statistical hypothesis test, representing the probability of occurrence of a given event. If the p-value is greater than our level of significance, we accept the null hypothesis, whereas if the p-value is lesser than our level of significance, we reject the null hypothesis. This is also referred to as the decision rule. For our analysis we will set the significance level at 0.001 or 0.1%.
+As you recall form your Introduction to Statistics class, the p-value (probability value) is the level of significance within a statistical hypothesis test, representing the probability of obtaining a given result under the null hypothesis. If the p-value is greater than our level of significance, we fail to reject the null hypothesis, whereas if the p-value is less than our level of significance, we reject the null hypothesis. This is also referred to as the decision rule. For our analysis we will set the significance level at 0.001 or 0.1%.
 
 First, we are interested in understanding how individual loans differ based on the gender of the applicant. The total loan amount is biased by the number of borrowers i.e. the number of female and group borrowers is much larger than the male borrowers, therefore we look at the average loan amount per borrower. To keep the analysis simple we subset our data to only Male and Female borrowers and test our hypothesis using a two-sample t-test. A t-test is a statistical test that compares the means of two samples. By subsetting and calculating the average loan amounts, we are comparing sample means using t-test to check our hypothesis.
 
 Our null and alternative hypothesis are:
 
-
-$H_{0}:$  $µ_{female} - µ_{male} = 0$
+$H_{0}:$ $µ_{female} - µ_{male} = 0$
 
 <!-- The true difference between the average loan amount for Male borrowers and Female borrowers is equal to 0 -->
 
-$H_{1}:$  $µ_{female} - µ_{male} > 0$
+$H_{1}:$ $µ_{female} - µ_{male} > 0$
 
 <!-- The true difference between the average loan amount for Male borrowers and Female borrowers is less than 0 -->
 
@@ -403,17 +402,15 @@ male <- subset(pc_gender,pc_gender$bor_type == "Male")
 male_loan <- male %>% pull(amount_per_cap)
 
 #hypothesis test
-hyp <- t.test(female_loan,male_loan, alternative = "greater")
+hyp <- t.test(female_loan,male_loan, alternative = "less")
 hyp
 ```
 
-The one-sided t-test results in a p-value greater than the level of significance 0.001 so we fail to reject the null hypothesis. This indicates that there is no difference in the sample means of average loan amount of male and female borrowers. We could interpret this as evidence that the gender of a borrower is not a source of motivation for lenders, however we must note that this does contradict what we have observed during EDA.
+The one-sided t-test results in a p-value below the level of significance 0.001 so we to reject the null hypothesis. This indicates that there is a systematic difference in the value of loans granted to male and female borrowers, with male borrowers receiving higher value loans.
 
 Now we look at the proportion of loans in the funded and non funded sector. Here we are interested in how the proportion of loans given to female borrowers differs between the funded and non funded category. We will be using a Z test to test two proportions. A z-test is a hypothesis test in which the z-statistic follows a normal distribution.
 
 Our null and alternative hypothesis are:
-
-WRITE IT OUT SYMBOLICALLY, LOOKS LIKE A TYPO
 
 $H_{0} :$ $p_{female\ funded} = p_{male\ funded}$
 
@@ -441,7 +438,7 @@ prop.test(x = c(total_female_loans_funded,total_male_loans_funded) , n = c(total
 
 ```
 
-Out test of proportions returns a  p_value of less than 0.001 and so we reject our null hypothesis that proportion of funded loans is equal for both male and female borrowers. This suggests lenders' preferences lie with female borrowers in low income countries when compared to male borrowers. This could indicate evidence that lender's are motivated by a desire to improve the position of women in developing countries.
+Out test of proportions returns a p_value of less than 0.001 and so we reject our null hypothesis that proportion of funded loans is equal for both male and female borrowers. This suggests lenders' preferences lie with female borrowers in low income countries when compared to male borrowers. This could indicate evidence that lender's are motivated by a desire to improve the position of women in developing countries.
 
 Lastly, we are interested in how the proportion of funded and not funded loans differ across sectors. For the purpose of this hypothesis test we will use the sector which has the highest number of loans - Food. We will use the same approach as the previous hypothesis test as we are comparing proportions. Our null and alternative hypothesis are:
 
@@ -473,10 +470,8 @@ The proportion test returns a p-value less than the 0.001 significance level and
 
 ## Limitations and Conclusion
 
-Our analysis has a few potential limitations. We have made a few assumptions when creating our indicator variables borrower type and funding status. It is possible that these assumptions may have filtered out some data that could have provided us with some more insight. Another limitation is the size of the observations for Not funded loans. There are very few Not Funded loans when compared to Funded Loans and this hinders any comparison we would like to make. We need to assume that our data does not contain the entire population of Not Funded loans.
+Hypothesis testing reveals that while female borrowers have a higher funding rate, their loans are on average lower in value than the funded loans of male borrowers. Hence, while this suggests that lenders may be motivated by the idea of helping women, we cannot rule out the possibility that this phenomenon is due to lenders simply preferring the lower value loans requested by women.
 
-To conclude, through descriptive statistics we observed that highest proportion of Funded Loans are in the Health, Education and Wholesale sector to name a few. Based on our data, we have seen that the proportion of funded loans is higher than not funded loans, which reflects the high funding rate for all sectors. We see that female borrowers received the highest over all loan amounts throughout 2005-2012. (However, we must keep in mind that our data contains more female borrowers). We also looked at the average amount given to borrowers across sectors and noted that group borrowers tend to received the lowest average loan amount in funded loans. Through our hypothesis test we learned that the average loan amount received by a borrower does not differ based on the borrower's gender. Further we also observed that proportion of funded loans for female borrowers is higher than male borrowes.
+Our analysis has a few potential limitations. We have made a few assumptions when creating our indicator variables borrower type and funding status. It is possible that these assumptions may have filtered out some data that could have provided us with some more insight. Another limitation is the size of the observations for Not Funded loans. There are very few Not Funded loans when compared to Funded Loans and this hinders any comparison we would like to make. We need to assume that our data does not contain the entire population of Not Funded loans.
 
-Overall, we can conclude that Lender's may be heterogeneous in their preferences and motivations when it comes to lending. We have aggregated our data at numerous levels which could have led to the Simpson's paradox. This mainly refers to the appearance of a trend in several groups, however it may disappear when the groups are aggregated.
-
-*Note: Performing a paired t-test and proptest respectively is one way of testing our hypothesis, however there are multiple other methods that can be explored to test this hypothesis and further analyze this data.*
+Finally, we note that while we are making generalizations about lending motivations, lenders may be heterogeneous in their preferences and motivations when it comes to lending. We have aggregated our data at numerous levels which could have led to the Simpson's paradox. Future analysis could explore if these trends hold at the country and sector level.

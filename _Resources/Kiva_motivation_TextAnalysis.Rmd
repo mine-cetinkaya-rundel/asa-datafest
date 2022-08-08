@@ -1,7 +1,5 @@
 ---
 title: "Analysing Text Data to Understand Lender Motivation"
-author: "Aarushi Verma"
-date: "01/07/2022"
 output: 
   html_document:
     toc: true

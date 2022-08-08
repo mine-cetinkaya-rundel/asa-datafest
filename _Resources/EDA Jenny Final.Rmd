@@ -380,7 +380,7 @@ ggplot(aes(x = reorder(sector, max_default_rate), y = default_rate, fill = as.fa
        x = "", fill = "Borrower sex")
 ```
 
-From the graph above, we can see that in Personal Use, Manufaturing, Housing, and Transportation sectors, males have a higher default rate than females, while in Health, the data appears to be the opposite. It's worth noting that in Entertainment and Education, especially in Education where females received a higher loan amount than males, only none of the female borrowers defaulted, while in Wholesale sector only female borrowers defaulted their loans. In other sectors, the default rates for both males and females are similar.
+From the graph above, we can see that in Personal Use, Manufaturing, Housing, and Transportation sectors, males have a higher default rate than females, while in Health, the trend appears to be the opposite. It's worth noting that in Entertainment and Education, female loan defaults are incredibly rare, while in the Wholesale sector only female borrowers defaulted their loans, and male defaults are very rare. In other sectors, the default rates for both males and females are similar. This suggests we might want to consider sector, or potentially sector-sex interactions in our loan repayment analysis.
 
 ### Conclusion
 
