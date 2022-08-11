@@ -23,6 +23,18 @@ website:
       - href: contact.qmd
         text: Contact
 
+  sidebar:
+    - title: "Tutorials"
+      style: "docked"
+      background: light
+      collapse-level: 2
+      contents:
+        - getting-started.qmd
+        - EDA Jenny Final.qmd
+        - Kiva_motivation_hypotest.qmd
+        - Kiva_motivation_TextAnalysis.qmd
+        - regression.qmd
+
 format:
   html:
     theme: custom.scss
