@@ -26,3 +26,5 @@ margin-top: 0px
 <iframe width="100%" height="1000px" src="https://allis.shinyapps.io/datafest/" title="Quarto Documentation"></iframe>
 ```
 :::
+
+This app and webpage were developed by Angela Kan, Aarushi Verma, Jenny Yang, and Allison Li under the supervision of Mine Cetinkaya-Rundel, Maria Tackett, and Jennifer Kampe as part of the Data+ program.
