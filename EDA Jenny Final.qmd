@@ -60,7 +60,7 @@ Let's start simple. To get a general sense of the loan amount, we can plot a his
 
 ```{r loan_amount dist, message = FALSE, warning = FALSE, fig.width = 8}
 #Format variable names for legend 
-lender_loans$status <- gsub("in_repayment", "in repayment", lender_loans$status)
+#lender_loans$status <- gsub("in_repayment", "in repayment", lender_loans$status)
 lender_loans$status <- sub("(.)", "\\U\\1",lender_loans$status,perl=TRUE)
 
 #Plot the Loan amount distribution
