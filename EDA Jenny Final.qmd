@@ -28,7 +28,7 @@ Recall the prompt: **Help understand what motivates people to lend money to deve
 
 From the file names and data dictionary, `lender_loans.csv`, `lenders.csv`, and `loans.csv` seem to be three most relevant files. We can take a quick peek at the data before diving more deeply in.
 
-```{r read data, message = FALSE, warning = FALSE, results=FALSE}
+```{r read data, message = FALSE, warning = FALSE}
 #read data
 lender_loans <- read_csv("data/lender_loans.csv")
 lenders <- read_csv("data/lenders.csv")
@@ -60,7 +60,7 @@ Let's start simple. To get a general sense of the loan amount, we can plot a his
 
 ```{r loan_amount dist, message = FALSE, warning = FALSE, fig.width = 8}
 #Format variable names for legend 
-#lender_loans$status <- gsub("in_repayment", "in repayment", lender_loans$status)
+lender_loans$status <- gsub("in_repayment", "in repayment", lender_loans$status)
 lender_loans$status <- sub("(.)", "\\U\\1",lender_loans$status,perl=TRUE)
 
 #Plot the Loan amount distribution
