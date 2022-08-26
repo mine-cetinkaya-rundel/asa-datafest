@@ -231,7 +231,7 @@ value one if the loan status is "paid" and zero if it is "defaulted."
 
 ```{r}
 d <- loans %>% 
-  filter(status == "paid"|status == "defaulted")
+  dplyer::filter(status == "paid"|status == "defaulted")
 d <- d %>% 
   mutate(status = if_else(status == "paid", 1, 0))
 ```
