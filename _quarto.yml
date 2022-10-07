@@ -1,8 +1,7 @@
 project:
   type: website
   resources:
-    - "resources/"
-    - "app/"
+    - "_resources/"
 
 website:
   title: "ASA DataFest"
@@ -29,9 +28,9 @@ website:
       collapse-level: 2
       contents:
         - getting-started.qmd
-        - EDA Jenny Final.qmd
-        - Kiva_motivation_hypotest.qmd
-        - Kiva_motivation_TextAnalysis.qmd
+        - eda.qmd
+        - Kiva-motivation-hypotest.qmd
+        - Kiva-motivation-TextAnalysis.qmd
         - regression.qmd
 
 format:
