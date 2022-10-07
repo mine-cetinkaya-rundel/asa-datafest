@@ -26,7 +26,6 @@ website:
   sidebar:
     - title: "Tutorials"
       style: "docked"
-      background: light
       collapse-level: 2
       contents:
         - getting-started.qmd
@@ -38,7 +37,6 @@ website:
 format:
   html:
     theme: custom.scss
-    css: styles.css
     toc: true
 
 editor: visual
